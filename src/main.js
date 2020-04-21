@@ -6,8 +6,8 @@ import router from './router'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { Table, TableColumn } from 'element-ui';
 import 'element-ui/lib/theme-chalk/index.css';
-import {ajax_get, ajax_post } from './tools/ajax'
-import { baseTime } from './config/config.js';
+import { ajax_get, ajax_post } from './tools/ajax'
+import { baseTime } from './tools/config.js';
 
 Vue.component('font-awesome-icon', FontAwesomeIcon);
 
