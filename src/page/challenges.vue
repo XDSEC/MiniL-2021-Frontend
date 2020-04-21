@@ -23,8 +23,8 @@
                                 <img :src="value2.avatar">
                             </div>
                             <div class="text">
-                                <div class="name">{{value2.title}}</div>
-                                <div>
+                                <div class="name">{{value2.name}}</div>
+                                <div v-if="talkList[key2].length > 0">
                                     {{talkList[key2][talkList[key2].length - 1].text}}
                                 </div>
                             </div>
@@ -36,8 +36,8 @@
                                 <img :src="value3.avatar">
                             </div>
                             <div class="text">
-                                <div class="name">{{value3.title}}</div>
-                                <div>
+                                <div class="name">{{value3.name}}</div>
+                                <div v-if="talkList[key3].length > 0">
                                     {{talkList[key3][talkList[key3].length - 1].text}}
                                 </div>
                             </div>
@@ -135,24 +135,49 @@ export default {
             unread: {},
             //公告的id
             notice: '',
+            //当前正在做的题目
+            //vue无法追踪数组变化，所以单另开了一个
+            currentTalk: [],
         }
     },
-    computed: {
-        currentTalk () {
-            if(this.active !== '') {
-                return this.talkList[this.active];
-            }
-        },
-    },
     methods: {
-        showToggle (key) {
+        showToggle(key) {
             this.type[key] = !this.type[key];
         },
         chooseTalk (id) {
+            this.currentTalk = this.talkList[id]
+            var chall = this.rawdata[id];
             this.unread[id] = 0;
-            this.talkNo = this.rawdata[id].title;
-            this.textarea = (this.rawdata[id].done === 1 ? false : true);
+            this.talkNo = chall.name;
+            this.textarea = chall.done === 1 ? false : true;
             this.active = id;
+            this.$get("/challenges/" + chall.id).then(
+                res => res.json()
+            ).then(res => {
+                var chall = res.data
+                if (this.currentTalk.length === 0) {
+                    this.currentTalk.push({
+                        avatar: 'asdf',
+                        text: chall.description,
+                        admin: 2
+                    })
+                }
+                if(this.currentTalk.length - 1 < chall.hints.length) {
+                    for(var h of chall.hints) {
+                        this.$get('/hints/' + h.id).then(
+                            res=>res.json()
+                        ).then(res=>{
+                            this.currentTalk.push({
+                                avatar: 'asdf',
+                                text: res.data.content,
+                                admin: 2
+                            })
+                        })
+                    }
+                }
+                console.log(chall)
+            });
+            Vue.set(this.talkList, id, this.currentTalk)
         },
         //计算解决进度
         Done () {
@@ -171,72 +196,70 @@ export default {
                 this.send();
             }
         },
-        send () {
-            if(this.message != '') {
-                if(this.message != '查询分值') {
-                    let flag = this.message;
+        send() {
+            if (this.message !== "") {
+                this.talkList[this.active].push({
+                    avatar: "../../static/images/avatar.jpg",
+                    text: this.message,
+                    admin: 0
+                });
+                if (this.message === "查询分值") {
                     this.talkList[this.active].push({
-                        avatar: '../../static/images/avatar.jpg',
-                        text: this.message,
-                        admin: 0,
+                        avatar: this.rawdata[this.active].avatar,
+                        text: "当前题目分值" + this.rawdata[this.active].value,
+                        admin: 1
                     });
-                    this.message = '';
-                    let data = {
-                        id: this.active,
-                        flag: flag
-                    }
-                    this.$post('/submit', data).then(resp => {
-                        if(resp.code == 0) {
-                            this.talkList[this.active].push({
-                                avatar: this.rawdata[this.active].avatar,
-                                text: resp.message,
-                                admin: 1,
-                            })
-                        }
-                        if(resp.code == 1) {
-                            this.talkList[this.active].push({
-                                avatar: this.rawdata[this.active].avatar,
-                                text: resp.message,
-                                admin: 1,
-                            })
-                            this.List[this.rawdata[this.active].type.toLowerCase()][this.active].done = 1;
-                            this.textarea = false;
-                            Vue.set(this.doneNumber, this.rawdata[this.active].type.toLowerCase(), this.doneNumber[this.rawdata[this.active].type.toLowerCase()] - 1)
-                        } 
-                    }).catch(error => console.log(error));
+                    this.message = "";
+                    return;
                 }
-                else {
-                    this.getRankScore().then(resp => {
+                let data = {
+                    challenge_id: this.active,
+                    submission: this.message
+                };
+                this.message = "";
+                this.$post("/challenges/attempt", data)
+                    .then(resp => {
                         this.talkList[this.active].push({
-                            avatar: '../../static/images/avatar.jpg',
-                            text: this.message,
-                            admin: 0,
+                            avatar: this.rawdata[this.active].avatar,
+                            text: resp.message,
+                            admin: 1
                         });
-                        this.message = '';
-                        if(resp.code === 1) {
-                            this.talkList[this.active].push({
-                                avatar: this.rawdata[this.active].avatar,
-                                text: '当前题目分值'+resp.score,
-                                admin: 1,
-                            });
+                        if (resp.code == 1) {
+                            this.List[
+                                this.rawdata[this.active].type.toLowerCase()
+                            ][this.active].done = 1;
+                            this.textarea = false;
+                            Vue.set(
+                                this.doneNumber,
+                                this.rawdata[this.active].type.toLowerCase(),
+                                this.doneNumber[
+                                    this.rawdata[this.active].type.toLowerCase()
+                                ] - 1
+                            );
                         }
-                    });
-                }
-                
+                    })
+                    .catch(error => console.log(error));
             }
         },
-        getChallenges () {
-            this.$get('/get_all').then(resp => {
-                if(resp.code != undefined && resp.code === 0) {
-                    alert(resp.message);
-                    localStorage.removeItem('team_id');
-                    this.$router.push('/login');
-                }
-                else {
-                    this.rawdata = resp;
+        getChallenges() {
+            this.$get("/challenges")
+                .then(resp => {
+                    switch (resp.status) {
+                        case 200:
+                            return resp.json();
+                            break;
+                        case 403:
+                            throw Error("请重新登录");
+                            break;
+                    }
+                }).catch(error => {
+                    console.log(error);
+                    localStorage.removeItem("team_id");
+                    this.$router.push("/login");
+                }).then(resp => {
+                    this.rawdata = resp.data;
                     this.generateList();
-                }
-            }).catch(error => console.log(error));
+                });
         },
         //好多for
         generateList () {
@@ -246,61 +269,24 @@ export default {
                     this.notice = Object.keys(this.rawdata)[0];
                 }
                 //抽取分类
-                let type = this.rawdata[i].type.toLowerCase();;
+                let type = this.rawdata[i].category.toLowerCase();
                 //若没有 新建该类
-                if(this.type[type] === undefined) {
+                if (this.type[type] === undefined) {
                     Vue.set(this.type, type, true);
                     Vue.set(this.List, type, {});
                 }
-                //处理元数据，生成对话框队列
-                //若无数据 新建对话框队列
-                if(this.talkList[i] === undefined) {
+                if (this.talkList[i] !== undefined) {
+                    let recvd_cnt = this.talkList[i].filter(o => o.admin === 2)
+                    // need to tweak with CTFd
+                } else {
+                    this.talkList[i] = []
                     Vue.set(this.talkList, i, []);
                     Vue.set(this.unread, i, 0);
-                    for(let j = 0; j < this.rawdata[i].text.length; j++) {
-                        Vue.set(this.talkList[i], this.talkList[i].length, {
-                            avatar: this.rawdata[i].avatar,
-                            text: this.rawdata[i].text[j],
-                            admin: 2,
-                        });
-                        this.unread[i] = j;
-                    }
                 }
-                //若有 则是实时等待新消息情景
-                else {
-                    let adminNumber = 0;
-                    //统计当前消息队列中题目公告类信息条数
-                    for(let p in this.talkList[i]) {
-                        if(this.talkList[i][p].admin === 2) {
-                            adminNumber++;
-                        }
-                    }
-                    //将新消息中比旧数据多的一部分push进对话框队列
-                    for(let q = adminNumber, r = 1; q < this.rawdata[i].text.length; q++, r++) {
-                        Vue.set(this.talkList[i], this.talkList[i].length, {
-                            avatar: this.rawdata[i].avatar,
-                            text: this.rawdata[i].text[q],
-                            admin: 2,
-                        });
-                        this.unread[i] = r;
-                    }
-                }
-                //List将元数据按类型分好类
                 Vue.set(this.List[type], i, this.rawdata[i]);
             }
             //重新计算答题进度
             this.Done();
-        },
-        getToken() {
-            this.$get('/get_token').then(resp => {
-                localStorage.setItem('token', resp.token);
-            }).catch(error => console.log(error));
-        },
-        getRankScore () {
-            let data = {
-                id: this.active,
-            }
-            return this.$post('/get_score', data);
         },
     },
     created () {
@@ -326,8 +312,7 @@ export default {
         else {
             this.getChallenges();
         }
-        this.getToken();
-        this._time = setInterval( () => {
+        this._time = setInterval(() => {
             this.getChallenges();
         }, this.$time);
     },

@@ -3,7 +3,10 @@
         <div class="login-container">
             <div class="top-bar">
                 <div class="red" @click="jump"></div>
-                <font-awesome-icon icon="pen" class="icon" @click="showToggle"/>
+                <div class="tip">
+                    <font-awesome-icon id="toggle" icon="pen" class="icon" @click="showToggle"/>
+                    <span class="tiptext">{{showLogin?"注册":"登陆"}}</span>
+                </div>
             </div>
             <div class="middle" v-show="showLogin">
                 <img src="../../static/images/avatar.jpg">
@@ -57,6 +60,8 @@ export default {
     methods: {
         showToggle () {
             this.showLogin = !this.showLogin;
+            localStorage.removeItem('token')
+            getToken(this.showLogin?'/login':'/register')
         },
         messageToggle () {
             this.messageShow = !this.messageShow;
@@ -69,20 +74,30 @@ export default {
             this.messageShow = true;
         },
         login () {
+            if(localStorage.getItem('token') === null) {
+                alert('同学，你太快了') // 还没获取到csrf token
+                return
+            }
             if(this.loginName != '' && this.loginPassword != '') {
                 let data = {
                     name: this.loginName,
                     password: this.loginPassword,
+                    nonce: localStorage.getItem('token')
                 }
                 this.$post('/login', data).then(resp => {
-                    if(resp.code === 1) {
-                        localStorage.setItem('team_id', resp.team_id);
-                        this.$router.push('/challenges');
+                    switch(resp.status){
+                        case 200:
+                            localStorage.setItem('team_id', this.loginName)
+                            this.$router.push('/challenges');
+                            break;
+                        case 403:
+                            this.messageBox('用户名或密码错误');
+                            getToken();
+                            break;
                     }
-                    else {
-                        this.messageBox(resp.message);
-                    }
-                }).catch(error => console.log(error));
+                }).catch(error => {
+                    console.log(error)
+                });
             }
             else {
                 if(this.loginName === '') {
@@ -94,7 +109,11 @@ export default {
             }
         },
         register () {
-            if(this.registerName === '' || this.registerSchool === '' || this.registerEmail === '' || this.registerPassword === '' || this.registerPasswordRepeat === '') {
+            if(localStorage.getItem('token') === null) {
+                alert('同学，你太快了') // 还没获取到csrf token
+                return
+            }
+            if(this.registerName === '' ||  this.registerEmail === '' || this.registerPassword === '' || this.registerPasswordRepeat === '') {
                 this.messageBox('请将信息填写完整');
             }
             else {
@@ -106,7 +125,7 @@ export default {
                         name: this.registerName,
                         email: this.registerEmail,
                         password: this.registerPassword,
-                        school: this.registerSchool,
+                        nonce: localStorage.getItem('token'),
                     }
                     this.$post('/register', data).then(resp => {
                         if(resp.code === 1) {
@@ -120,17 +139,22 @@ export default {
                 }
             }
         },
-        getToken() {
-            this.$get('/get_token').then(resp => {
-                localStorage.setItem('token', resp.token);
-            }).catch(error => console.log(error));
+        getToken (url) {
+            this.$get(url).then(resp => {
+                return resp.text()
+            }).catch(
+                error => console.log(error)
+            ).then(resp => {
+                var token = resp.match('\'?csrf(Nonce|_nonce)\'? ?[:=] "(.*)"')[2]
+                localStorage.setItem('token', token);
+            });
         },
         jump () {
             this.$router.push('/index');
         }
     },
     created () {
-        this.getToken();
+        this.getToken('/login');
     }
 }
 </script>
@@ -275,5 +299,21 @@ input {
     color: #ffffff;
     background: rgb(38, 123, 253);
     border: 1px solid rgb(129, 169, 241);
+}
+ 
+.tiptext {
+    visibility: hidden;
+    width: 60px;
+    background-color: gray;
+    color: #fff;
+    text-align: center;
+    margin: 0 10px;
+    border-radius: 6px;
+ 
+    position: absolute;
+}
+ 
+.tip:hover .tiptext {
+    visibility: visible;
 }
 </style>
