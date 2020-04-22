@@ -55,9 +55,9 @@ export default {
         },
         logOut () {
             this.$get('/logout').then(resp => {
-                if(resp.code === 1) {
+                if(resp.success === true) {
                     localStorage.removeItem('team_id');
-                    this.jump('login');
+                    this.$router.push("/login");
                 }
             }).catch(error => console.log(error));
         },

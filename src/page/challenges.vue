@@ -152,9 +152,7 @@ export default {
             this.type[key] = !this.type[key];
         },
         updateChallenge (index) {
-            return this.$get("/challenges/" + this.rawdata[index].id).then(
-                res => res.json()
-            ).then(res => {
+            return this.$get("/challenges/" + this.rawdata[index].id).then(res => {
                 var chall = res.data
                 this.rawdata[this.active] = chall
                 return chall
@@ -178,9 +176,7 @@ export default {
                 }
                 if(this.talkList[id].length - 1 < chall.hints.length) {
                     for(var h of chall.hints) {
-                        this.$get('/hints/' + h.id).then(
-                            res=>res.json()
-                        ).then(res=>{
+                        this.$get('/hints/' + h.id).then(res=>{
                             this.talkList[id].push({
                                 avatar: 'asdf',
                                 text: res.data.content,
@@ -256,16 +252,8 @@ export default {
         },
         getChallenges() {
             this.$get("/challenges")
-                .then(resp => {
-                    switch (resp.status) {
-                        case 200:
-                            return resp.json();
-                            break;
-                        case 403:
-                            throw Error("请重新登录");
-                            break;
-                    }
-                }).catch(error => {
+                .catch(error => {
+                    alert('请重新登陆')
                     console.log(error);
                     localStorage.removeItem("team_id");
                     this.$router.push("/login");
