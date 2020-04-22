@@ -82,7 +82,9 @@
                 <!-- 输入框主体 -->
                 <div class="input-container">
                     <div class="tools-bar" v-if="active !== ''">
-                        <font-awesome-icon :icon="['far', 'grin']" @click="askScore" :class="['tools-icon', textarea ? '' : 'disable']"/>
+                        <font-awesome-icon :icon="['far', 'grin']" width="2em" fixed-width @click="send('查询分值')" :class="['tools-icon', textarea ? '' : 'disable']"/>
+                        &nbsp;&nbsp;
+                        <font-awesome-icon :icon="['fab', 'docker']" width="2em" @click="send('获取环境')" :class="['tools-icon', textarea ? '' : 'disable']"/>
                     </div>
                     <div v-if="active === ''"></div>
                     <textarea v-if="textarea === true && active != ''" placeholder="flag格式: LCTF{xxxxx} 请提交完整字符串" v-model="message"  @keydown.enter.prevent ="send()" ref="textarea"></textarea>
@@ -98,12 +100,14 @@
 import Vue from 'vue'
 import HeadBar from '../components/HeadBar.vue'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faChevronRight, faChevronDown } from '@fortawesome/free-solid-svg-icons'
+import { faChevronRight, faChevronDown, faFont } from '@fortawesome/free-solid-svg-icons'
 import { faGrin } from '@fortawesome/free-regular-svg-icons'
+import { faDocker } from '@fortawesome/free-brands-svg-icons'
 
 library.add(faChevronRight);
 library.add(faChevronDown);
 library.add(faGrin);
+library.add(faDocker)
 
 export default {
     components: {
@@ -135,49 +139,57 @@ export default {
             unread: {},
             //公告的id
             notice: '',
-            //当前正在做的题目
-            //vue无法追踪数组变化，所以单另开了一个
-            currentTalk: [],
+        }
+    },
+    computed: {
+        currentTalk() {
+            if(this.active)
+                return this.talkList[this.active]
         }
     },
     methods: {
         showToggle(key) {
             this.type[key] = !this.type[key];
         },
+        updateChallenge (index) {
+            return this.$get("/challenges/" + this.rawdata[index].id).then(
+                res => res.json()
+            ).then(res => {
+                var chall = res.data
+                this.rawdata[this.active] = chall
+                return chall
+            })
+        },
         chooseTalk (id) {
-            this.currentTalk = this.talkList[id]
             var chall = this.rawdata[id];
             this.unread[id] = 0;
             this.talkNo = chall.name;
             this.textarea = chall.done === 1 ? false : true;
             this.active = id;
-            this.$get("/challenges/" + chall.id).then(
-                res => res.json()
-            ).then(res => {
-                var chall = res.data
-                if (this.currentTalk.length === 0) {
-                    this.currentTalk.push({
+
+            this.updateChallenge(id).then(chall=>{
+                console.log(chall)
+                if (this.talkList[id].length === 0) {
+                    this.talkList[id].push({
                         avatar: 'asdf',
                         text: chall.description,
-                        admin: 2
+                        admin: 1
                     })
                 }
-                if(this.currentTalk.length - 1 < chall.hints.length) {
+                if(this.talkList[id].length - 1 < chall.hints.length) {
                     for(var h of chall.hints) {
                         this.$get('/hints/' + h.id).then(
                             res=>res.json()
                         ).then(res=>{
-                            this.currentTalk.push({
+                            this.talkList[id].push({
                                 avatar: 'asdf',
                                 text: res.data.content,
-                                admin: 2
+                                admin: 1
                             })
                         })
                     }
                 }
-                console.log(chall)
             });
-            Vue.set(this.talkList, id, this.currentTalk)
         },
         //计算解决进度
         Done () {
@@ -189,36 +201,31 @@ export default {
                 Vue.set(this.doneNumber, i, done);
             }
         },
-        //查询分值快捷键
-        askScore () {
-            if(this.textarea) {
-                this.message = '查询分值';
-                this.send();
-            }
-        },
-        send() {
-            if (this.message !== "") {
-                this.talkList[this.active].push({
-                    avatar: "../../static/images/avatar.jpg",
-                    text: this.message,
-                    admin: 0
-                });
-                if (this.message === "查询分值") {
-                    this.talkList[this.active].push({
-                        avatar: this.rawdata[this.active].avatar,
-                        text: "当前题目分值" + this.rawdata[this.active].value,
-                        admin: 1
-                    });
-                    this.message = "";
-                    return;
-                }
-                let data = {
-                    challenge_id: this.active,
-                    submission: this.message
-                };
-                this.message = "";
-                this.$post("/challenges/attempt", data)
-                    .then(resp => {
+        send(msg=this.message) {
+            if (msg === "") 
+                return
+            this.talkList[this.active].push({
+                avatar: "../../static/images/avatar.jpg",
+                text: msg,
+                admin: 0
+            });
+            switch(msg){
+                case '查询分值':
+                    this.updateChallenge(this.active).then(chall =>{
+                        this.talkList[this.active].push({
+                            avatar: chall.avatar,
+                            text: "当前题目分值" + chall.value,
+                            admin: 1
+                        })
+                    })
+                    break
+                case '获取环境':
+                    break
+                default:
+                    this.$post("/challenges/attempt", {
+                        challenge_id: this.active,
+                        submission: msg
+                    }).then(resp => {
                         this.talkList[this.active].push({
                             avatar: this.rawdata[this.active].avatar,
                             text: resp.message,
@@ -226,20 +233,26 @@ export default {
                         });
                         if (resp.code == 1) {
                             this.List[
-                                this.rawdata[this.active].type.toLowerCase()
+                                this.rawdata[
+                                    this.active
+                                ].type.toLowerCase()
                             ][this.active].done = 1;
                             this.textarea = false;
                             Vue.set(
                                 this.doneNumber,
-                                this.rawdata[this.active].type.toLowerCase(),
+                                this.rawdata[
+                                    this.active
+                                ].type.toLowerCase(),
                                 this.doneNumber[
-                                    this.rawdata[this.active].type.toLowerCase()
+                                    this.rawdata[
+                                        this.active
+                                    ].type.toLowerCase()
                                 ] - 1
                             );
                         }
-                    })
-                    .catch(error => console.log(error));
+                    }).catch(error => console.log(error));
             }
+            this.message = "";
         },
         getChallenges() {
             this.$get("/challenges")
@@ -266,7 +279,7 @@ export default {
             for(let i in this.rawdata) {
                 //抽取第一个题目作为公告
                 if(this.notice === '') {
-                    this.notice = Object.keys(this.rawdata)[0];
+                    // this.notice = Object.keys(this.rawdata)[0];
                 }
                 //抽取分类
                 let type = this.rawdata[i].category.toLowerCase();
@@ -279,7 +292,6 @@ export default {
                     let recvd_cnt = this.talkList[i].filter(o => o.admin === 2)
                     // need to tweak with CTFd
                 } else {
-                    this.talkList[i] = []
                     Vue.set(this.talkList, i, []);
                     Vue.set(this.unread, i, 0);
                 }
@@ -616,5 +628,21 @@ export default {
 .input-container textarea:disabled {
     cursor: not-allowed;
     background: #ffffff;
+}
+
+.tiptext {
+    visibility: hidden;
+    width: 60px;
+    background-color: gray;
+    color: #fff;
+    text-align: center;
+    margin: 0 10px;
+    border-radius: 6px;
+ 
+    position: absolute;
+}
+ 
+.tip:hover .tiptext {
+    visibility: visible;
 }
 </style>
