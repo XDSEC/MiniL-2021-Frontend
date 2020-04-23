@@ -3,12 +3,24 @@
         <div class="noise"></div>
         <div class="overlay"></div>
         <div class="terminal">
-            <h1>MiniLCTF <span class="errorcode">2020</span> Terminal</h1>
+            <h1>
+                MiniLCTF
+                <span class="errorcode">2020</span> Terminal
+            </h1>
             <p contenteditable="true" class="output">cat ~/index</p>
             <p contenteditable="true" class="output">Hey! Hackers.</p>
-            <p contenteditable="true" class="output">I've heard that you are tech lovers, software crackers or someone like geeks. But I think you guys are not strong enough <3.</p>
-            <p contenteditable="true" class="output">If you want to prove to me how pro you are, i've prepared some challenges for you guys.</p>
-            <p class="output">Please try to <a href="/login">click me</a>.</p>
+            <p
+                contenteditable="true"
+                class="output"
+            >I've heard that you are tech lovers, software crackers or someone like geeks. But I think you guys are not strong enough <3.</p>
+            <p
+                contenteditable="true"
+                class="output"
+            >If you want to prove to me how pro you are, i've prepared some challenges for you guys.</p>
+            <p class="output">
+                Please try to
+                <a href="/login">click me</a>.
+            </p>
             <p class="output">Good luck and have fun <3</p>
             <p class="output">hostname</p>
             <p class="output">XDSEC</p>
@@ -17,50 +29,33 @@
 </template>
 
 <script>
-    export default {
-        data() {
-            return {
-                countDownTime: '尚未开始',
-                html: '',
-            }
+export default {
+    data() {
+        return {
+            countDownTime: "尚未开始",
+            html: ""
+        };
+    },
+    methods: {
+        jump(url) {
+            window.open(url);
         },
-        methods: {
-            jump (url) {
-                window.open(url);
-            },
-            start() {
-                this.$router.push('/login');
-            },
-            getHtml () {
-                this.$get('/get_index').then(resp => {
-                    if(resp.code === 1) {
-                        this.html = resp.content;
-                    }
-                }).catch(error => {console.log(error)});
-                
-            }
-        },
-        mounted () {
-            
-        },
-        created () {
-            this.getHtml();
-        },
-        beforeDestroy () {
-            
+        start() {
+            this.$router.push("/login");
         }
     }
+};
 </script>
 
 <style scoped>
-    html {
+html {
     min-height: 100%;
 }
 .container {
     box-sizing: border-box;
     height: 100%;
     background-color: #000000;
-    background-image: radial-gradient(#11581E, #041607);
+    background-image: radial-gradient(#11581e, #041607);
     background-repeat: no-repeat;
     background-size: cover;
     font-family: Consolas, Helvetica, sans-serif;
@@ -75,11 +70,11 @@
     position: absolute;
     width: 100%;
     height: 100%;
-    background-image: url("https://media.giphy.com/media/oEI9uBYSzLpBK/giphy.gif");
+    background-image: url("../../static/images/giphy.gif");
     background-repeat: no-repeat;
     background-size: cover;
     z-index: -1;
-    opacity: .02;
+    opacity: 0.02;
 }
 
 .overlay {
@@ -87,7 +82,12 @@
     position: absolute;
     width: 100%;
     height: 100%;
-    background: repeating-linear-gradient(180deg, rgba(0, 0, 0, 0) 0, rgba(0, 0, 0, 0.3) 50%, rgba(0, 0, 0, 0) 100%);
+    background: repeating-linear-gradient(
+        180deg,
+        rgba(0, 0, 0, 0) 0,
+        rgba(0, 0, 0, 0.3) 50%,
+        rgba(0, 0, 0, 0) 100%
+    );
     background-size: auto 4px;
     z-index: 1;
 }
@@ -103,8 +103,24 @@
     bottom: 0;
     width: 100%;
     height: 100%;
-    background-image: -webkit-gradient(linear, left bottom, left top, from(transparent), color-stop(2%, rgba(32, 128, 32, 0.2)), color-stop(3%, rgba(32, 128, 32, 0.8)), color-stop(3%, rgba(32, 128, 32, 0.2)), to(transparent));
-    background-image: linear-gradient(0deg, transparent 0%, rgba(32, 128, 32, 0.2) 2%, rgba(32, 128, 32, 0.8) 3%, rgba(32, 128, 32, 0.2) 3%, transparent 100%);
+    background-image: -webkit-gradient(
+        linear,
+        left bottom,
+        left top,
+        from(transparent),
+        color-stop(2%, rgba(32, 128, 32, 0.2)),
+        color-stop(3%, rgba(32, 128, 32, 0.8)),
+        color-stop(3%, rgba(32, 128, 32, 0.2)),
+        to(transparent)
+    );
+    background-image: linear-gradient(
+        0deg,
+        transparent 0%,
+        rgba(32, 128, 32, 0.2) 2%,
+        rgba(32, 128, 32, 0.8) 3%,
+        rgba(32, 128, 32, 0.2) 3%,
+        transparent 100%
+    );
     background-repeat: no-repeat;
     -webkit-animation: scan 7.5s linear 0s infinite;
     animation: scan 7.5s linear 0s infinite;
@@ -114,7 +130,8 @@
     0% {
         background-position: 0 -100vh;
     }
-    35%, 100% {
+    35%,
+    100% {
         background-position: 0 100vh;
     }
 }
@@ -123,7 +140,8 @@
     0% {
         background-position: 0 -100vh;
     }
-    35%, 100% {
+    35%,
+    100% {
         background-position: 0 100vh;
     }
 }
@@ -141,7 +159,8 @@
 
 .output {
     color: rgba(128, 255, 128, 0.8);
-    text-shadow: 0 0 1px rgba(51, 255, 51, 0.4), 0 0 2px rgba(255, 255, 255, 0.8);
+    text-shadow: 0 0 1px rgba(51, 255, 51, 0.4),
+        0 0 2px rgba(255, 255, 255, 0.8);
     outline: none;
 }
 
@@ -177,5 +196,4 @@ a::after {
 .errorcode {
     color: white;
 }
-
 </style>

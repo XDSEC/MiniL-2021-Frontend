@@ -50,36 +50,29 @@
 
 <script>
 export default {
-    props:[
-        'talkList',
-        'enabled',
-        'avatar',
-        'title',
-        'muted'
-    ],
+    props: ["talkList", "enabled", "avatar", "title", "muted"],
     data() {
         return {
             //聊天框内容
-            message: '',
+            message: ""
         };
     },
     methods: {
-        send(msg=this.message) {
-            if (msg === "") 
-                return
+        send(msg = this.message) {
+            if (msg === "") return;
             this.talkList.push({
                 avatar: "../../static/images/avatar.jpg",
                 text: msg,
                 admin: 0
             });
-            this.$emit('send_msg', msg)
-            this.message = ""
+            this.$emit("send_msg", msg);
+            this.message = "";
         },
-        recv(msg) {
+        recv(msg, role = 1) {
             this.talkList.push({
                 avatar: this.avatar,
                 text: msg,
-                admin: 1
+                admin: role
             });
         }
     }
@@ -226,10 +219,10 @@ export default {
     text-align: center;
     margin: 0 10px;
     border-radius: 6px;
- 
+
     position: absolute;
 }
- 
+
 .tip:hover .tiptext {
     visibility: visible;
 }
