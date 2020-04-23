@@ -15,7 +15,10 @@ function ajax_post(url, data) {
     return fetch(baseURL + url, {
         method: 'POST',
         body: JSON.stringify(data),
-        headers: { 'Content-Type': 'application/json', },
+        headers: {
+            'Content-Type': 'application/json',
+            'CSRF-Token': localStorage.getItem("nonce"),
+        },
         credentials: 'include'
     }).then(res=> {
         if(res.status === 200)

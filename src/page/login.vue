@@ -79,6 +79,7 @@ export default {
                 }
                 this.$post('/login', data).then(resp => {
                     localStorage.setItem('team_id', this.loginName)
+                    localStorage.setItem('nonce', resp.data.nonce)
                     this.$router.push('/challenges');
                 }).catch(error => {
                     this.messageBox('用户名或密码错误');
@@ -109,12 +110,12 @@ export default {
                         password: this.registerPassword,
                     }
                     this.$post('/register', data).then(resp => {
-                        if(resp.code === 1) {
+                        if(resp.success === true) {
                             this.messageBox('注册成功');
                             this.showToggle();
                         }
                         else {
-                            this.messageBox(resp.message);
+                            this.messageBox(resp.data);
                         }
                     }).catch(error => console.log(error));
                 }

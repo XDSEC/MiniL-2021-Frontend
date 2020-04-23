@@ -4,18 +4,37 @@
         <HeadBar></HeadBar>
         <div class="main-container">
             <div class="left-container">
+                <div class="group-container">
+                    <div v-if="this.notice !== ''"
+                        :key="notice" 
+                        :class="['talk-item', active == notice ? 'active' : '']"
+                        @click="chooseTalk(notice)"
+                    >
+                        <div class="label">&nbsp;</div>
+                        <div class="avatar">
+                            <img src="../../static/images/xdsec.png">
+                        </div>
+                        <div class="text">
+                            <div class="name">{{rawdata[notice].name}}</div>
+                            <div v-if="chatStorage[notice].length > 0">
+                                {{chatStorage[notice][chatStorage[notice].length - 1].text}}
+                            </div>
+                        </div>
+                        <div class="unread" v-show="unread_cnt[notice] != 0">{{unread_cnt[notice]}}</div>
+                    </div>
+                </div>
+
                 <div class="group-container" v-for="(value, key) in List" :key="key" v-if="List != {}">
                     <!-- 生成分组的名字，可点击用于折叠 -->
                     <div class="group" @click="showToggle(key)">
                         <div class="group-name">
-                            <font-awesome-icon :icon="type[key] ? 'chevron-down' : 'chevron-right'" class="icon"/>
+                            <font-awesome-icon :icon="has_category[key] ? 'chevron-down' : 'chevron-right'" class="icon"/>
                             {{key.toUpperCase()}}
                         </div>
-                        <div class="group-number" v-if="key === 'notice'">1/1</div>
-                        <div class="group-number" v-else>{{doneNumber[key] + '/' + Object.keys(List[key]).length}}</div>
+                        <div class="group-number" v-if="key !== 'notice'">{{doneNumber[key] + '/' + Object.keys(List[key]).length}}</div>
                     </div>
                     <!-- 生成会话头像 -->
-                    <div v-show="type[key]" class="group-list">
+                    <div v-show="has_category[key]" class="group-list">
                         <!-- 此处偷懒，其实可以先sort好List再渲染 -->
                         <!-- 先生成还没完成的题目 -->
                         <div v-for="(value2, key2) in List[key]" :key="key2" :class="['talk-item', active == key2 ? 'active' : '']" @click="chooseTalk(key2)" v-if="value2.done === 0">
@@ -24,11 +43,11 @@
                             </div>
                             <div class="text">
                                 <div class="name">{{value2.name}}</div>
-                                <div v-if="talkList[key2].length > 0">
-                                    {{talkList[key2][talkList[key2].length - 1].text}}
+                                <div v-if="chatStorage[key2].length > 0">
+                                    {{chatStorage[key2][chatStorage[key2].length - 1].text}}
                                 </div>
                             </div>
-                            <div class="unread" v-show="unread[key2] != 0">{{unread[key2]}}</div>
+                            <div class="unread" v-show="unread_cnt[key2] != 0">{{unread_cnt[key2]}}</div>
                         </div>
                         <!-- 后生成还完成的题目， 对公告不应用disable样式 -->
                         <div v-for="(value3, key3) in List[key]" :key="key3" :class="['talk-item', key3 === notice ? '' : 'disable', active == key3 ? 'active' : '']" @click="chooseTalk(key3)" v-if="value3.done != 0">
@@ -37,11 +56,11 @@
                             </div>
                             <div class="text">
                                 <div class="name">{{value3.name}}</div>
-                                <div v-if="talkList[key3].length > 0">
-                                    {{talkList[key3][talkList[key3].length - 1].text}}
+                                <div v-if="chatStorage[key3].length > 0">
+                                    {{chatStorage[key3][chatStorage[key3].length - 1].text}}
                                 </div>
                             </div>
-                            <div class="unread" v-show="unread[key3] != 0">{{unread[key3]}}</div>
+                            <div class="unread" v-show="unread_cnt[key3] != 0">{{unread_cnt[key3]}}</div>
                         </div>
                     </div>
                 </div>
@@ -58,39 +77,15 @@
                     </div>
                 </div>
             </div>
-            <div class="right-container">
-                <!-- 顶部显示回话标题 -->
-                <div class="title-container">
-                    {{talkNo}}
-                </div>
-                <!-- 聊天信息主体 -->
-                <div class="info-container">
-                    <div v-for="(item, index) in currentTalk" :key="index" :class="[item.admin != 0 ? '' : 'mine','info-item']">
-                        <div class="avatar">
-                            <img :src="item.avatar">
-                        </div>
-                        <div class="text-container">
-                            <div class="text"  v-html="item.text" v-if="item.admin != 0">
-                                
-                            </div>
-                            <div class="text" v-if="item.admin === 0">
-                                {{item.text}}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!-- 输入框主体 -->
-                <div class="input-container">
-                    <div class="tools-bar" v-if="active !== ''">
-                        <font-awesome-icon :icon="['far', 'grin']" width="2em" fixed-width @click="send('查询分值')" :class="['tools-icon', textarea ? '' : 'disable']"/>
-                        &nbsp;&nbsp;
-                        <font-awesome-icon :icon="['fab', 'docker']" width="2em" @click="send('获取环境')" :class="['tools-icon', textarea ? '' : 'disable']"/>
-                    </div>
-                    <div v-if="active === ''"></div>
-                    <textarea v-if="textarea === true && active != ''" placeholder="flag格式: LCTF{xxxxx} 请提交完整字符串" v-model="message"  @keydown.enter.prevent ="send()" ref="textarea"></textarea>
-                    <textarea v-if="textarea === false && active != ''" disabled placeholder="已经不能输入了"></textarea>
-                </div>
-            </div>
+            <ChatWindow ref="chat"
+                v-bind:talkList="chatStorage[active]"
+                v-bind:enabled="active !== null"
+                v-bind:title="active!==null?rawdata[active].name:''"
+                v-bind:avatar="active!==null?rawdata[active].avatar:''"
+                v-bind:muted="active!==null && rawdata[active].done"
+
+                v-on:send_msg="send"
+            ></ChatWindow>
         </div>
     </div>
 </div>
@@ -99,6 +94,7 @@
 <script>
 import Vue from 'vue'
 import HeadBar from '../components/HeadBar.vue'
+import ChatWindow from '../components/ChatWindow'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faChevronRight, faChevronDown, faFont } from '@fortawesome/free-solid-svg-icons'
 import { faGrin } from '@fortawesome/free-regular-svg-icons'
@@ -111,24 +107,21 @@ library.add(faDocker)
 
 export default {
     components: {
-        HeadBar
+        HeadBar,
+        ChatWindow
     },
     data() {
         return {
-            //聊天框内容
-            message: '',
             //当前激活的会话
-            active: '',
-            //输入框可否输入
-            textarea: true,
+            active: null,
+            //聊天记录
+            chatStorage: {},
             //计时器id
             _time: '',
             //会话分组列表
-            type: {},
+            has_category: {},
             //会话名称
             talkNo: '',
-            //聊天记录
-            talkList: {},
             //服务器返回的原始数据
             rawdata: {},
             //左边的会话列表
@@ -136,20 +129,15 @@ export default {
             //题目的完成进度
             doneNumber: {},
             //未读消息数
-            unread: {},
+            unread_cnt: {},
             //公告的id
             notice: '',
-        }
-    },
-    computed: {
-        currentTalk() {
-            if(this.active)
-                return this.talkList[this.active]
+            chatprops: {}
         }
     },
     methods: {
         showToggle(key) {
-            this.type[key] = !this.type[key];
+            this.has_category[key] = !this.has_category[key];
         },
         updateChallenge (index) {
             return this.$get("/challenges/" + this.rawdata[index].id).then(res => {
@@ -158,18 +146,17 @@ export default {
                 return chall
             })
         },
+        recv(msg) {this.$refs.chat.recv(msg)},
         chooseTalk (id) {
             var chall = this.rawdata[id];
-            this.unread[id] = 0;
-            this.talkNo = chall.name;
-            this.textarea = chall.done === 1 ? false : true;
+            this.unread_cnt[id] = 0;
             this.active = id;
-
+            // debugger;
             this.updateChallenge(id).then(chall=>{
                 console.log(chall)
-                if (this.talkList[id].length === 0)
+                if (this.chatStorage[id].length === 0)
                     this.recv(chall.description)
-                if(this.talkList[id].length - 1 < chall.hints.length) {
+                if(this.chatStorage[id].length - 1 < chall.hints.length) {
                     for(var h of chall.hints) {
                         this.$get('/hints/' + h.id).then(
                             res=>this.recv(res.data.content)
@@ -178,31 +165,8 @@ export default {
                 }
             });
         },
-        //计算解决进度
-        Done () {
-            for(let i in this.List) {
-                let done = Object.keys(this.List[i]).length;
-                for(let j in this.List[i]) {
-                    if(this.List[i][j].done === 1) done--;
-                }
-                Vue.set(this.doneNumber, i, done);
-            }
-        },
-        recv(msg){
-            this.talkList[this.active].push({
-                avatar: this.rawdata[this.active].avatar,
-                text: msg,
-                admin: 1
-            });
-        },
-        send(msg=this.message) {
-            if (msg === "") 
-                return
-            this.talkList[this.active].push({
-                avatar: "../../static/images/avatar.jpg",
-                text: msg,
-                admin: 0
-            });
+        send(msg) {
+            console.log(msg)
             switch(msg){
                 case '查询分值':
                     this.updateChallenge(this.active).then(chall =>{
@@ -235,86 +199,99 @@ export default {
                         challenge_id: this.rawdata[this.active].id,
                         submission: msg
                     }).then(resp => {
+                        if(resp.success == true)
+                            return resp.data
+                        throw resp
+                    }).catch(
+                        error => console.log(error)
+                    ).then(resp => {
                         this.recv(resp.message)
-                        if (resp.code == 1) {
-                            this.List[
-                                this.rawdata[
-                                    this.active
-                                ].type.toLowerCase()
-                            ][this.active].done = 1;
+                        if (resp.status == 'correct') {
+                            var category = this.rawdata[this.active].category.toLowerCase()
+                            this.List[category][this.active].done = 1;
+                            this.rawdata[this.active].done = 1;
                             this.textarea = false;
                             Vue.set(
-                                this.doneNumber,
-                                this.rawdata[
-                                    this.active
-                                ].type.toLowerCase(),
-                                this.doneNumber[
-                                    this.rawdata[
-                                        this.active
-                                    ].type.toLowerCase()
-                                ] - 1
+                                this.doneNumber, category,
+                                this.doneNumber[category] + 1
                             );
                         }
-                    }).catch(error => console.log(error));
+                    });
             }
-            this.message = "";
         },
         getChallenges() {
             this.$get("/challenges")
-                .then(resp => {
-                    this.rawdata = resp.data;
-                    this.generateList();
-                }).catch(error => {
+                .then(resp => resp.data)
+                .catch(error => {
                     alert('请重新登陆')
                     console.log(error);
                     localStorage.removeItem("team_id");
                     this.$router.push("/login");
-                });
+                }).then(data => this.$get("/users/me/solves")
+                    .then(resp => {
+                        var solved = {}
+                        if(resp.success !== true)
+                            throw resp
+                        for(var i of resp.data)
+                            solved[i.challenge_id] = true
+                        this.generateList(data, solved)
+                    })
+                ).catch(err => console.log(err));
         },
         //好多for
-        generateList () {
-            for(let i in this.rawdata) {
-                //抽取第一个题目作为公告
-                if(this.notice === '') {
-                    // this.notice = Object.keys(this.rawdata)[0];
-                }
-                //抽取分类
-                let type = this.rawdata[i].category.toLowerCase();
-                //若没有 新建该类
-                if (this.type[type] === undefined) {
-                    Vue.set(this.type, type, true);
-                    Vue.set(this.List, type, {});
-                }
-                if (this.talkList[i] !== undefined) {
-                    let recvd_cnt = this.talkList[i].filter(o => o.admin === 2)
+        generateList (challenges, solved) {
+            for(let i in challenges) {
+                let type = challenges[i].category.toLowerCase();
+                
+                if (this.chatStorage[i] !== undefined) {
+                    let recvd_cnt = this.chatStorage[i].filter(o => o.admin === 2)
                     // need to tweak with CTFd
                 } else {
-                    Vue.set(this.talkList, i, []);
-                    Vue.set(this.unread, i, 0);
+                    Vue.set(this.chatStorage, i, []);
+                    Vue.set(this.unread_cnt, i, 0);
                 }
-                this.rawdata[i].done = 0;
-                Vue.set(this.List[type], i, this.rawdata[i]);
+                if(type === 'notice') {
+                    this.notice = i;
+                    continue
+                }
+                if(solved[challenges[i].id] === true)
+                    challenges[i].done = 1
+                else challenges[i].done = 0
+                //抽取分类
+                //若没有 新建该类
+                if (this.has_category[type] === undefined) {
+                    Vue.set(this.has_category, type, true);
+                    Vue.set(this.List, type, {});
+                }
+                Vue.set(this.List[type], i, challenges[i]);
             }
+            this.rawdata = challenges
             //重新计算答题进度
-            this.Done();
+            for(let i in this.List) {
+                let done = 0;
+                for(let j in this.List[i]) {
+                    if(this.List[i][j].done === 1) done++;
+                }
+                Vue.set(this.doneNumber, i, done);
+            }
         },
     },
     created () {
         //读取缓存
         let rawdata = sessionStorage.getItem('rawdata') && JSON.parse(sessionStorage.getItem('rawdata'));
-        let talkList = sessionStorage.getItem('talkList') && JSON.parse(sessionStorage.getItem('talkList'));
+        let chatStorage = sessionStorage.getItem('chatStorage') && JSON.parse(sessionStorage.getItem('chatStorage'));
         let List = sessionStorage.getItem('List') && JSON.parse(sessionStorage.getItem('List'));
-        let unread = sessionStorage.getItem('unread') && JSON.parse(sessionStorage.getItem('unread'));
+        let unread_cnt = sessionStorage.getItem('unread') && JSON.parse(sessionStorage.getItem('unread'));
         let doneNumber = sessionStorage.getItem('doneNumber') && JSON.parse(sessionStorage.getItem('doneNumber'));
-        let type = sessionStorage.getItem('type') && JSON.parse(sessionStorage.getItem('type'));
+        let has_category = sessionStorage.getItem('type') && JSON.parse(sessionStorage.getItem('type'));
         //若有缓存则直接使用
-        if(rawdata != null && talkList != null && List != null && doneNumber != null && type != null) {
+        if(rawdata != null && chatStorage != null && List != null && doneNumber != null && has_category != null) {
             this.rawdata = rawdata;
-            this.talkList = talkList;
+            this.chatStorage = chatStorage;
             this.List = List;
-            this.unread = unread;
+            this.unread_cnt = unread_cnt;
             this.doneNumber = doneNumber;
-            this.type = type;
+            this.has_category = has_category;
             sessionStorage.clear();
             this.getChallenges();
         }
@@ -323,6 +300,8 @@ export default {
             this.getChallenges();
         }
         this._time = setInterval(() => {
+            if(this.active !== null)
+                this.updateChallenge(this.active)
             this.getChallenges();
         }, this.$time);
     },
@@ -339,11 +318,11 @@ export default {
     beforeDestroy () {
         //缓存
         sessionStorage.setItem('rawdata', JSON.stringify(this.rawdata));
-        sessionStorage.setItem('talkList', JSON.stringify(this.talkList));
+        sessionStorage.setItem('chatStorage', JSON.stringify(this.chatStorage));
         sessionStorage.setItem('List', JSON.stringify(this.List));
-        sessionStorage.setItem('unread', JSON.stringify(this.unread));
+        sessionStorage.setItem('unread', JSON.stringify(this.unread_cnt));
         sessionStorage.setItem('doneNumber', JSON.stringify(this.doneNumber));
-        sessionStorage.setItem('type', JSON.stringify(this.type));
+        sessionStorage.setItem('type', JSON.stringify(this.has_category));
         //销毁计数器
         clearInterval(this._time);
     }
@@ -511,136 +490,19 @@ export default {
     width: 100%;
     white-space: nowrap;
 }
-.right-container {
-    height: 100%;
-    width: 600px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    align-items: center;
-    background: #ffffff;
-}
-.title-container {
-    height: 45px;
-    line-height: 45px;
-    width: 100%;
-    box-sizing: border-box;
-    padding: 0 20px;
-    font-size: 14px;
-    text-align: left;
-    background: #ffffff;
-}
-.info-container {
-    height: 480px;
-    width: 100%;
-    /* display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: flex-start;
-    background: #ffffff; */
-    overflow: auto;
-}
-.info-item {
-    height: auto;
-    width: 100%;
-    display: flex;
-    justify-content: flex-start;
-    align-items: flex-start;
-    margin: 20px 0;
-}
-.info-item.mine {
-    flex-direction: row-reverse;
-}
-.info-item .avatar {
-    height: 25px;
-    width: 25px;
-    border-radius: 50%;
-    margin-top: 25px;
-    overflow: hidden;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 0 10px 0 20px;
-}
-.info-item.mine .avatar {
-    margin: 0 20px 0 10px;
-}
-.info-item .text-container {
-    width: 545px;
-    display: flex;
-    justify-content: flex-start;
-    align-items: center;
-}
-.info-item.mine .text-container {
-    flex-direction: row-reverse;
-}
-.text-container .text {
-    max-width: 360px;
-    line-height: 20px;
-    font-size: 12px;
-    padding: 5px;
-    border-radius: 5px;
-    text-align: left;
-    background: rgb(240, 240, 240);
-    word-break: break-all;
-}
-.input-container {
-    height: 170px;
-    width: 100%;
-    box-sizing: border-box;
-    border-top: 1px solid rgb(245, 245, 248);
-    background: #ffffff;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: center;
-}
-.input-container .tools-bar {
-    height: 30px;
-    width: 100%;
-    box-sizing: border-box;
-    padding: 0 20px;
-    display: flex;
-    justify-content: flex-start;
-    align-items: center;
-}
-.tools-icon {
-    height: 20px;
-    width: 20px;
-    color: rgb(126, 126, 126);
-    cursor: pointer;
-}
-.tools-icon.disable {
-    cursor: not-allowed;
-}
-.input-container textarea {
-    height: 140px;
-    width: 100%;
-    border: none;
-    outline: none;
-    box-sizing: border-box;
-    padding: 10px;
-    resize: none;
-    background: #ffffff;
-}
-.input-container textarea:disabled {
-    cursor: not-allowed;
-    background: #ffffff;
-}
-
-.tiptext {
-    visibility: hidden;
-    width: 60px;
-    background-color: gray;
-    color: #fff;
-    text-align: center;
-    margin: 0 10px;
-    border-radius: 6px;
- 
+.label {
+    font-size: 4px;
+    line-height:3em; width:6em;
+    background: #8fbbe2;
     position: absolute;
-}
- 
-.tip:hover .tiptext {
-    visibility: visible;
+    left: 0;top: 0;
+    z-Index: 2;
+    -webkit-transform-origin: right bottom;
+    -moz-transform-origin: right bottom;
+    transform-origin: right bottom;
+    -webkit-transform: translate(-29.29%,-100%) rotate(-45deg);
+    -moz-transform: translate(-29.29%,-100%) rotate(-45deg);
+    transform: translate(-29.29%,-100%) rotate(-45deg);
+    text-indent:0; text-align:center;
 }
 </style>
