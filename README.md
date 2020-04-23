@@ -1,5 +1,7 @@
 # LCTF2018 前端页面
 
+## 部署
+
 此仓库在盘神前端的基础上将后端改为CTFd（或与CTFd 拥有一致API的后端）  
 由于CTFd登陆注册的路由挂在了`/`上而不是`/api/v1`，使用时需要加个插件  
 
@@ -10,7 +12,7 @@ https://gist.github.com/frankli0324/c91ab94ce4f7c2a1d34c57f09bc36604
 nginx配置
 ```nginx
 location / {
-  前端
+  前端，参考原README
 }
 location /api/v1 {
   proxy_set_header        Host $host;
@@ -20,6 +22,11 @@ location /api/v1 {
   proxy_pass ->>CTFd;
 }
 ```
+
+## 关于为什么要用CTFd
+
+* 后台比较漂亮，看谁交了啥flag之类的
+* 有现成的docker插件
 
 # 以下为原README
 
