@@ -167,22 +167,13 @@ export default {
 
             this.updateChallenge(id).then(chall=>{
                 console.log(chall)
-                if (this.talkList[id].length === 0) {
-                    this.talkList[id].push({
-                        avatar: 'asdf',
-                        text: chall.description,
-                        admin: 1
-                    })
-                }
+                if (this.talkList[id].length === 0)
+                    this.recv(chall.description)
                 if(this.talkList[id].length - 1 < chall.hints.length) {
                     for(var h of chall.hints) {
-                        this.$get('/hints/' + h.id).then(res=>{
-                            this.talkList[id].push({
-                                avatar: 'asdf',
-                                text: res.data.content,
-                                admin: 1
-                            })
-                        })
+                        this.$get('/hints/' + h.id).then(
+                            res=>this.recv(res.data.content)
+                        )
                     }
                 }
             });
@@ -197,6 +188,13 @@ export default {
                 Vue.set(this.doneNumber, i, done);
             }
         },
+        recv(msg){
+            this.talkList[this.active].push({
+                avatar: this.rawdata[this.active].avatar,
+                text: msg,
+                admin: 1
+            });
+        },
         send(msg=this.message) {
             if (msg === "") 
                 return
@@ -208,25 +206,36 @@ export default {
             switch(msg){
                 case '查询分值':
                     this.updateChallenge(this.active).then(chall =>{
-                        this.talkList[this.active].push({
-                            avatar: chall.avatar,
-                            text: "当前题目分值" + chall.value,
-                            admin: 1
-                        })
+                        this.recv("当前题目分值" + chall.value)
                     })
                     break
                 case '获取环境':
+                    var url = "/container?challenge_id="+this.rawdata[this.active].id
+                    this.$get(url).then(res => {
+                        if(res.remaining_time === undefined) {
+                            return this.$post(url).then(res => {
+                                if(res.success === true) {
+                                    this.recv('成功获取题目环境。')
+                                    this.recv('注意：同一账户同时只能开启同一题目，请注意合理安排做题时间')
+                                }
+                                else this.recv(res.msg)
+                                return this.$get(url)
+                            })
+                        } else return res
+                    }).catch(err => {
+                        if (err.status === 404)
+                            this.recv('本题🈚️题目环境')
+                    }).then(chall => {
+                        this.recv(chall.domain)
+                        this.recv('剩余时间：'+chall.remaining_time+'秒')
+                    })
                     break
                 default:
                     this.$post("/challenges/attempt", {
-                        challenge_id: this.active,
+                        challenge_id: this.rawdata[this.active].id,
                         submission: msg
                     }).then(resp => {
-                        this.talkList[this.active].push({
-                            avatar: this.rawdata[this.active].avatar,
-                            text: resp.message,
-                            admin: 1
-                        });
+                        this.recv(resp.message)
                         if (resp.code == 1) {
                             this.List[
                                 this.rawdata[
@@ -252,14 +261,14 @@ export default {
         },
         getChallenges() {
             this.$get("/challenges")
-                .catch(error => {
+                .then(resp => {
+                    this.rawdata = resp.data;
+                    this.generateList();
+                }).catch(error => {
                     alert('请重新登陆')
                     console.log(error);
                     localStorage.removeItem("team_id");
                     this.$router.push("/login");
-                }).then(resp => {
-                    this.rawdata = resp.data;
-                    this.generateList();
                 });
         },
         //好多for
@@ -283,6 +292,7 @@ export default {
                     Vue.set(this.talkList, i, []);
                     Vue.set(this.unread, i, 0);
                 }
+                this.rawdata[i].done = 0;
                 Vue.set(this.List[type], i, this.rawdata[i]);
             }
             //重新计算答题进度
