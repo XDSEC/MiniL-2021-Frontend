@@ -34,13 +34,29 @@
                     fixed-width
                     @click="send('查询分值')"
                     :class="['tools-icon', muted ? 'disable' : '']"
-                />&nbsp;&nbsp;
-                <font-awesome-icon
-                    :icon="['fab', 'docker']"
-                    width="2em"
-                    @click="send('获取环境')"
-                    :class="['tools-icon', muted ? 'disable' : '']"
-                />
+                />&nbsp;
+                <nav class="drawer">
+                    <input type="checkbox" href="#" class="menu-open" id="menu-open" />
+                    <label for="menu-open" :class="['menu-open-button', 'tools-icon', muted ? 'disable' : '']">
+                        <font-awesome-icon :icon="['fab', 'docker']" fixed-width/>
+                    </label>
+
+                    <font-awesome-icon class="menu-item"
+                        :icon="['fas', 'play-circle']"
+                        fixed-width
+                        @click="send('获取环境')"
+                    />
+                    <font-awesome-icon class="menu-item"
+                        :icon="['fas', 'recycle']"
+                        fixed-width
+                        @click="send('延长时限')"
+                    />
+                    <font-awesome-icon class="menu-item"
+                        :icon="['fas', 'stop-circle']"
+                        fixed-width
+                        @click="send('销毁环境')"
+                    />
+                </nav>
             </div>
             <div v-if="!enabled"></div>
             <textarea
@@ -56,6 +72,12 @@
 </template>
 
 <script>
+import { library } from '@fortawesome/fontawesome-svg-core'
+import { faPlayCircle, faStopCircle, faRecycle } from '@fortawesome/free-solid-svg-icons'
+import { faGrin } from '@fortawesome/free-regular-svg-icons'
+import { faDocker } from '@fortawesome/free-brands-svg-icons'
+
+library.add(faPlayCircle, faStopCircle, faRecycle, faGrin, faDocker);
 export default {
     props: ["talkList", "enabled", "avatar", "title", "muted"],
     data() {
@@ -82,22 +104,62 @@ export default {
                 text: msg,
                 admin: role
             });
+            this.$refs.scr.click();
         }
     },
-    mounted() {
-        if (this.$refs.textarea != undefined) {
-            this.$refs.textarea.focus();
-        }
-    },
-    updated() {
-        if (this.$refs.textarea != undefined) {
-            this.$refs.textarea.focus();
-        }
-    }
 };
 </script>
 
 <style>
+    .drawer {
+        width: 20px;
+        height: 20px;
+        align-content: center;
+    }
+    .menu-open {
+        display: none;
+    }
+    .menu-open-button {
+        z-index: 1;
+        background-color: #ffffff;
+    }
+    .menu-item {
+        -webkit-transition: -webkit-transform ease-out 200ms;
+        transition: transform ease-out 200ms, -webkit-transform ease-out 200ms;
+        color: rgb(126, 126, 126);
+    }
+    .menu-item,.menu-open-button {
+        cursor: pointer;
+        border-radius: 100%;
+        position: absolute;
+    }
+
+    .menu-open:checked ~ .menu-item {
+        -webkit-transition-timing-function: cubic-bezier(0.935, 0, 0.34, 1.33);
+        transition-timing-function: cubic-bezier(0.935, 0, 0.34, 1.33);
+    }
+
+    .menu-open:checked ~ .menu-item:nth-child(3) {
+        transition-duration: 180ms;
+        -webkit-transition-duration: 180ms;
+        -webkit-transform: translate3d(0.08361px, -40.99997px, 0);
+        transform: translate3d(0.08361px, -40.99997px, 0);
+    }
+
+    .menu-open:checked ~ .menu-item:nth-child(4) {
+        transition-duration: 280ms;
+        -webkit-transition-duration: 280ms;
+        -webkit-transform: translate3d(45.9466px, -22.47586px, 0);
+        transform: translate3d(45.9466px, -22.47586px, 0);
+    }
+
+    .menu-open:checked ~ .menu-item:nth-child(5) {
+        transition-duration: 380ms;
+        -webkit-transition-duration: 380ms;
+        -webkit-transform: translate3d(45.9466px, 25.47586px, 0);
+        transform: translate3d(45.9466px, 25.47586px, 0);
+    }
+
 .avatar img {
     height: 100%;
     width: 100%;
@@ -134,11 +196,6 @@ export default {
 .info-container {
     height: 480px;
     width: 100%;
-    /* display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: flex-start;
-    background: #ffffff; */
     overflow: auto;
 }
 .info-item {
@@ -210,6 +267,12 @@ export default {
     width: 20px;
     color: rgb(126, 126, 126);
     cursor: pointer;
+    -webkit-transition-duration: 200ms;
+    transition-duration: 200ms;
+}
+.tools-icon:hover {
+    -webkit-transform: scale(1.2, 1.2) translate3d(0, 0, 0);
+    transform: scale(1.2, 1.2) translate3d(0, 0, 0);
 }
 .tools-icon.disable {
     cursor: not-allowed;

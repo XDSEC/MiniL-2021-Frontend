@@ -233,8 +233,31 @@ export default {
                         });
                     break;
                 case "延长时限":
-
+                    var url =
+                        "/container?challenge_id=" +
+                        this.challs[this.active].id;
+                    ajax.request("PATCH", url)
+                        .then(res => {
+                            if (res.success === true) {
+                                this.recv("延长时限成功");
+                                return;
+                            } else this.recv(res.msg);
+                        })
+                        .catch(err => console.log(err));
+                    break;
                 case "销毁环境":
+                    var url =
+                        "/container?challenge_id=" +
+                        this.challs[this.active].id;
+                    ajax.request("DELETE", url)
+                        .then(res => {
+                            if (res.success === true) {
+                                this.recv("销毁成功");
+                                return;
+                            } else this.recv(res.msg);
+                        })
+                        .catch(err => console.log(err));
+                    break;
                 default:
                     ajax.post("/challenges/attempt", {
                         challenge_id: this.challs[this.active].id,
