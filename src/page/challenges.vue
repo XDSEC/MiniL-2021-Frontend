@@ -175,15 +175,6 @@ export default {
         showToggle(key) {
             this.has_category[key] = !this.has_category[key];
         },
-        updateChallenge(index) {
-            return ajax
-                .get("/challenges/" + this.challs[index].id)
-                .then(res => {
-                    var chall = res.data;
-                    this.challs[this.active] = chall;
-                    return chall;
-                });
-        },
         recv(msg, role) {
             this.$refs.chat.recv(msg, role);
         },
@@ -193,7 +184,6 @@ export default {
             this.active = id;
             // debugger;
             this.updateChallenge(id).then(chall => {
-                console.log(chall);
                 if (this.chatStorage[id].length === 0)
                     this.recv(chall.description, 2);
                 if (this.chatStorage[id].length - 1 < chall.hints.length) {
@@ -264,8 +254,7 @@ export default {
                                 this.catagorized_challs[category][
                                     this.active
                                 ].done = 1;
-                                this.challs[this.active].done = 1;
-                                this.textarea = false;
+                                Vue.set(this.challs[this.active], "done", 1);
                                 Vue.set(
                                     this.cnt_done,
                                     category,
@@ -294,10 +283,29 @@ export default {
                 )
                 .catch(err => console.log(err));
         },
-        //好多for
+        updateChallenge(index) {
+            return ajax
+                .get("/challenges/" + this.challs[index].id)
+                .then(res => {
+                    var chall = res.data;
+                    chall.done = this.challs[this.active].done;
+                    var avatar_url = chall.name.match(/\[.*\]/g)
+                    if(avatar_url !== null) {
+                        chall.name = chall.name.replace(/\[.*\]/g, '')
+                        chall.avatar = avatar_url[0].replace(/\[(.*)\]/g, "$1")
+                    }
+                    Vue.set(this.challs, this.active, chall);
+                    return chall;
+                }).catch(err => console.log(err));
+        },
         generateList(challenges, solved) {
             for (let i in challenges) {
                 let type = challenges[i].category.toLowerCase();
+                var avatar_url = challenges[i].name.match(/\[.*\]/g)
+                if(avatar_url !== null) {
+                    challenges[i].name = challenges[i].name.replace(/\[.*\]/g, '')
+                    challenges[i].avatar = avatar_url[0].replace(/\[(.*)\]/g, "$1")
+                }
 
                 if (this.chatStorage[i] === undefined) {
                     Vue.set(this.chatStorage, i, []);
@@ -305,7 +313,6 @@ export default {
                 }
                 let recvd_cnt = this.chatStorage[i].filter(o => o.admin === 2)
                     .length;
-                console.log(recvd_cnt);
                 this.cnt_unread[i] = challenges[i].hints - recvd_cnt + 1;
                 if (type === "notice") {
                     this.notice = i;
@@ -313,8 +320,6 @@ export default {
                 }
                 challenges[i].done = solved[challenges[i].id] ? 1 : 0;
                 if (challenges[i].done) this.cnt_unread[i] = 0;
-                //抽取分类
-                //若没有 新建该类
                 if (this.has_category[type] === undefined) {
                     Vue.set(this.has_category, type, true);
                     Vue.set(this.catagorized_challs, type, {});
@@ -350,7 +355,6 @@ export default {
         }
     },
     created() {
-        console.log(ajax);
         //读取缓存
         let challs =
             sessionStorage.getItem("challs") &&
@@ -396,16 +400,6 @@ export default {
             this.getChallenges();
             this.cache();
         }, this.$time);
-    },
-    mounted() {
-        if (this.$refs.textarea != undefined) {
-            this.$refs.textarea.focus();
-        }
-    },
-    updated() {
-        if (this.$refs.textarea != undefined) {
-            this.$refs.textarea.focus();
-        }
     },
     beforeDestroy() {
         //缓存

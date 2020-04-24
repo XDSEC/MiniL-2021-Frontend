@@ -26,13 +26,13 @@
                     width="2em"
                     fixed-width
                     @click="send('查询分值')"
-                    :class="['tools-icon', !muted ? '' : 'disable']"
+                    :class="['tools-icon', muted ? 'disable' : '']"
                 />&nbsp;&nbsp;
                 <font-awesome-icon
                     :icon="['fab', 'docker']"
                     width="2em"
                     @click="send('获取环境')"
-                    :class="['tools-icon', !muted ? '' : 'disable']"
+                    :class="['tools-icon', muted ? 'disable' : '']"
                 />
             </div>
             <div v-if="!enabled"></div>
@@ -59,7 +59,7 @@ export default {
     },
     methods: {
         send(msg = this.message) {
-            if (msg === "") return;
+            if (msg === "" || this.muted) return;
             this.talkList.push({
                 avatar: "../../static/images/avatar.jpg",
                 text: msg,
@@ -75,7 +75,17 @@ export default {
                 admin: role
             });
         }
-    }
+    },
+    mounted() {
+        if (this.$refs.textarea != undefined) {
+            this.$refs.textarea.focus();
+        }
+    },
+    updated() {
+        if (this.$refs.textarea != undefined) {
+            this.$refs.textarea.focus();
+        }
+    },
 };
 </script>
 

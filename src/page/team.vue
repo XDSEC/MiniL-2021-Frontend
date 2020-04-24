@@ -89,16 +89,6 @@ export default {
                 ret.push({name: i, value: this.category_total[i]})
             }
             return ret
-            // if (
-            //     this.echartData[ii].name ===
-            //     resp[i].challenge.category.toLowerCase()
-            // ) {
-            //     //此处有.000000000002 bug 注意截取小数点后位数
-            //     this.echartData[ii].value = (
-            //         parseFloat(this.echartData[ii].value) +
-            //         parseFloat(resp[i].score)
-            //     ).toFixed(3);
-            // }
         },
         solve_detail() {
             let solve_detail = this.solves;
@@ -136,6 +126,7 @@ export default {
                         }).format(d);
 
                         var chall = resp[i].challenge;
+                        resp[i].challenge.name = chall.name.replace(/\[.*\]/g, '')
                         if (this.category_total[chall.category] === undefined)
                             this.category_total[chall.category] = 0;
 
