@@ -3,7 +3,13 @@
         <!-- 顶部显示回话标题 -->
         <div class="title-container">{{title}}</div>
         <!-- 聊天信息主体 -->
-        <div class="info-container">
+        <div class="info-container" v-if="enabled">
+            <a
+                ref="scr"
+                class="scroller"
+                href="#bottom"
+                v-smooth-scroll="{duration: 1000, container: '.info-container'}"
+            ></a>
             <div
                 v-for="(item, index) in talkList"
                 :key="index"
@@ -17,6 +23,7 @@
                     <div class="text" v-if="item.admin === 0">{{item.text}}</div>
                 </div>
             </div>
+            <span id="bottom"></span>
         </div>
         <!-- 输入框主体 -->
         <div class="input-container">
@@ -53,8 +60,8 @@ export default {
     props: ["talkList", "enabled", "avatar", "title", "muted"],
     data() {
         return {
-            //聊天框内容
-            message: ""
+            message: "",
+            position: 0
         };
     },
     methods: {
@@ -67,6 +74,7 @@ export default {
             });
             this.$emit("send_msg", msg);
             this.message = "";
+            this.$refs.scr.click();
         },
         recv(msg, role = 1) {
             this.talkList.push({
@@ -85,7 +93,7 @@ export default {
         if (this.$refs.textarea != undefined) {
             this.$refs.textarea.focus();
         }
-    },
+    }
 };
 </script>
 
@@ -219,21 +227,5 @@ export default {
 .input-container textarea:disabled {
     cursor: not-allowed;
     background: #ffffff;
-}
-
-.tiptext {
-    visibility: hidden;
-    width: auto;
-    background-color: gray;
-    color: #fff;
-    text-align: center;
-    margin: 0 10px;
-    border-radius: 6px;
-
-    position: absolute;
-}
-
-.tip:hover .tiptext {
-    visibility: visible;
 }
 </style>

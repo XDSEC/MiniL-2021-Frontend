@@ -7,9 +7,11 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { Table, TableColumn } from 'element-ui';
 import 'element-ui/lib/theme-chalk/index.css';
 import { baseTime } from './tools/config.js';
+import vueSmoothScroll from 'vue2-smooth-scroll'
 
 Vue.component('font-awesome-icon', FontAwesomeIcon);
 
+Vue.use(vueSmoothScroll)
 Vue.use(Table);
 Vue.use(TableColumn);
 
