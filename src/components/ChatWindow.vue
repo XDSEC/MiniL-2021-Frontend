@@ -213,7 +213,7 @@ export default {
 
 .tiptext {
     visibility: hidden;
-    width: 60px;
+    width: auto;
     background-color: gray;
     color: #fff;
     text-align: center;

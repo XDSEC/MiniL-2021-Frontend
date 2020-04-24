@@ -136,6 +136,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { faGrin } from "@fortawesome/free-regular-svg-icons";
 import { faDocker } from "@fortawesome/free-brands-svg-icons";
+import ajax from "../tools/ajax";
 
 library.add(faChevronRight);
 library.add(faChevronDown);
@@ -175,13 +176,13 @@ export default {
             this.has_category[key] = !this.has_category[key];
         },
         updateChallenge(index) {
-            return this.$get("/challenges/" + this.challs[index].id).then(
-                res => {
+            return ajax
+                .get("/challenges/" + this.challs[index].id)
+                .then(res => {
                     var chall = res.data;
                     this.challs[this.active] = chall;
                     return chall;
-                }
-            );
+                });
         },
         recv(msg, role) {
             this.$refs.chat.recv(msg, role);
@@ -197,7 +198,7 @@ export default {
                     this.recv(chall.description, 2);
                 if (this.chatStorage[id].length - 1 < chall.hints.length) {
                     for (var h of chall.hints) {
-                        this.$get("/hints/" + h.id).then(res =>
+                        ajax.get("/hints/" + h.id).then(res =>
                             this.recv(res.data.content, 2)
                         );
                     }
@@ -216,17 +217,17 @@ export default {
                     var url =
                         "/container?challenge_id=" +
                         this.challs[this.active].id;
-                    this.$get(url)
+                    ajax.get(url)
                         .then(res => {
                             if (res.remaining_time === undefined) {
-                                return this.$post(url).then(res => {
+                                return ajax.post(url).then(res => {
                                     if (res.success === true) {
                                         this.recv("成功获取题目环境。");
                                         this.recv(
                                             "注意：同一账户同时只能开启同一题目，请注意合理安排做题时间"
                                         );
                                     } else this.recv(res.msg);
-                                    return this.$get(url);
+                                    return ajax.get(url);
                                 });
                             } else return res;
                         })
@@ -241,8 +242,11 @@ export default {
                             );
                         });
                     break;
+                case "延长时限":
+
+                case "销毁环境":
                 default:
-                    this.$post("/challenges/attempt", {
+                    ajax.post("/challenges/attempt", {
                         challenge_id: this.challs[this.active].id,
                         submission: msg
                     })
@@ -272,7 +276,7 @@ export default {
             }
         },
         getChallenges() {
-            this.$get("/challenges")
+            ajax.get("/challenges")
                 .then(resp => resp.data)
                 .catch(error => {
                     alert("请重新登陆");
@@ -281,7 +285,7 @@ export default {
                     this.$router.push("/login");
                 })
                 .then(data =>
-                    this.$get("/users/me/solves").then(resp => {
+                    ajax.get("/users/me/solves").then(resp => {
                         var solved = {};
                         if (resp.success !== true) throw resp;
                         for (var i of resp.data) solved[i.challenge_id] = true;
@@ -308,6 +312,7 @@ export default {
                     continue;
                 }
                 challenges[i].done = solved[challenges[i].id] ? 1 : 0;
+                if (challenges[i].done) this.cnt_unread[i] = 0;
                 //抽取分类
                 //若没有 新建该类
                 if (this.has_category[type] === undefined) {
@@ -328,17 +333,24 @@ export default {
         },
         cache() {
             sessionStorage.setItem("challs", JSON.stringify(this.challs));
-            sessionStorage.setItem("chatStorage", JSON.stringify(this.chatStorage));
+            sessionStorage.setItem(
+                "chatStorage",
+                JSON.stringify(this.chatStorage)
+            );
             sessionStorage.setItem(
                 "catagorized_challs",
                 JSON.stringify(this.catagorized_challs)
             );
-            sessionStorage.setItem("cnt_unread", JSON.stringify(this.cnt_unread));
+            sessionStorage.setItem(
+                "cnt_unread",
+                JSON.stringify(this.cnt_unread)
+            );
             sessionStorage.setItem("cnt_done", JSON.stringify(this.cnt_done));
             sessionStorage.setItem("type", JSON.stringify(this.has_category));
-        },
+        }
     },
     created() {
+        console.log(ajax);
         //读取缓存
         let challs =
             sessionStorage.getItem("challs") &&

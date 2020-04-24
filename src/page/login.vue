@@ -36,6 +36,7 @@
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faPen } from '@fortawesome/free-solid-svg-icons'
 import { faArrowAltCircleRight } from '@fortawesome/free-regular-svg-icons'
+import ajax from "../tools/ajax";
 library.add(faPen);
 library.add(faArrowAltCircleRight);
 export default {
@@ -77,7 +78,7 @@ export default {
                     name: this.loginName,
                     password: this.loginPassword,
                 }
-                this.$post('/login', data).then(resp => {
+                ajax.post('/login', data).then(resp => {
                     localStorage.setItem('team_id', this.loginName)
                     localStorage.setItem('nonce', resp.data.nonce)
                     this.$router.push('/challenges');
@@ -109,7 +110,7 @@ export default {
                         email: this.registerEmail,
                         password: this.registerPassword,
                     }
-                    this.$post('/register', data).then(resp => {
+                    ajax.post('/register', data).then(resp => {
                         if(resp.success === true) {
                             this.messageBox('注册成功');
                             this.showToggle();

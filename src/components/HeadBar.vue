@@ -49,6 +49,7 @@ import {
     faUser,
     faSignOutAlt
 } from "@fortawesome/free-solid-svg-icons";
+import ajax from '../tools/ajax'
 
 library.add(faCommentDots);
 library.add(faThLarge);
@@ -67,13 +68,13 @@ export default {
     methods: {
         jump(url) {
             if (url === "team") {
-                this.$router.push("/team/" + localStorage.getItem("team_id"));
+                this.$router.push("/team/me");
             } else {
                 this.$router.push("/" + url);
             }
         },
         logOut() {
-            this.$get("/logout")
+            ajax.get("/logout")
                 .then(resp => {
                     if (resp.success === true) {
                         localStorage.removeItem("team_id");

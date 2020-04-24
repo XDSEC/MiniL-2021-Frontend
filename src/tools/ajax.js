@@ -1,30 +1,22 @@
-import { baseURL }  from './config';
+import { baseURL } from './config';
 
-function ajax_get(url) {
+function request(method, url, data) {
     return fetch(baseURL + url, {
-        method: 'GET',
-        credentials: 'include'
-    }).then(res=> {
-        if(res.status === 200)
-            return res.json()
-        throw res
-    })
-}  
-
-function ajax_post(url, data) {
-    return fetch(baseURL + url, {
-        method: 'POST',
+        method: method,
         body: JSON.stringify(data),
         headers: {
             'Content-Type': 'application/json',
             'CSRF-Token': localStorage.getItem("nonce"),
         },
         credentials: 'include'
-    }).then(res=> {
-        if(res.status === 200)
+    }).then(res => {
+        if (res.status === 200)
             return res.json()
         throw res
     })
-}  
-
-export { ajax_get, ajax_post };
+}
+export default {
+    request: request,
+    get: url => request('GET', url),
+    post: (url, data) => request('POST', url, data)
+}

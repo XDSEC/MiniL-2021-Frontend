@@ -4,38 +4,27 @@
             <HeadBar></HeadBar>
             <div class="scoreboard-container">
                 <!-- 时钟 -->
-                <div class="time">
-                    {{timeString}}
-                </div>
-                <!-- 标签栏 -->
-                <div class="tag-container">
-                    <div :class="show === 'rank' ? 'active' : ''" @click="showChange('rank')">实时排名榜</div>
-                    <div :class="show === 'score' ? 'active' : ''" @click="showChange('score')">实时分值榜</div>
-                </div>
+                <div class="time">Current Time: {{timeString}}</div>
+                <div class="time" style="font-size: 50px">Ranks</div>
+                <div class="time"></div>
                 <!-- 排行榜 -->
-                <div class="rank-container" v-show="show === 'rank'">
-                    <div  v-if="scoreboard != ''" v-for="(value, key) in scoreboard" :key="key" :class="['rank-item', key === '1' ? 'one' : '', key === '2' ? 'two' : '', key === '3' ? 'three' : '']">
+                <div class="rank-container tip">
+                    <div
+                        v-if="scoreboard != ''"
+                        v-for="(value, key) in scoreboard"
+                        :key="key"
+                        :class="['rank-item', key === 0 ? 'one' : '', key === 1 ? 'two' : '', key === 2 ? 'three' : '']"
+                    >
                         <div class="rank-num">#{{key}}</div>
-                        <router-link :to="{ name: 'Team', params: {id: value.id}}" class="link">{{value.name}}</router-link>
+                        <router-link
+                            :to="'/team/'+value.id"
+                            class="link"
+                        >{{value.name}}</router-link>
                         <div class="score-num">{{value.score}}</div>
                     </div>
 
                     <!-- 加载图标 -->
                     <div v-if="scoreboard === ''" class="loading">
-                        <font-awesome-icon icon="spinner" spin />
-                    </div>
-                </div>
-                
-                <!-- 分值榜 -->
-                <div class="rank-container" v-show="show === 'score'">
-                    <div v-if="rankboard !== ''" v-for="(value, key) in rankboard" :key="key" :class="['rank-item', key === '1' ? 'one' : '', key === '2' ? 'two' : '', key === '3' ? 'three' : '']">
-                        <div class="rank-num">#{{key}}</div>
-                        <div class="team-name">{{value.name}} ({{value.category.toUpperCase()}})</div>
-                        <div class="score-num">{{value.score}}</div>
-                    </div>
-
-                    <!-- 加载图标 -->
-                    <div v-if="rankboard === ''" class="loading">
                         <font-awesome-icon icon="spinner" spin />
                     </div>
                 </div>
@@ -45,71 +34,80 @@
 </template>
 
 <script>
-import Vue from 'vue'
-import HeadBar from '../components/HeadBar.vue'
-import { library } from '@fortawesome/fontawesome-svg-core'
-import {faSpinner} from '@fortawesome/free-solid-svg-icons'
+import Vue from "vue";
+import HeadBar from "../components/HeadBar.vue";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faSpinner } from "@fortawesome/free-solid-svg-icons";
+import ajax from "../tools/ajax";
 
 library.add(faSpinner);
 
-    export default {
-        components: {
-            HeadBar
-        },
-        data() {
-            return {
-                //时钟字符串
-                timeString: '00:00:00',
-                //显示标签
-                show: 'rank',
-                //计时器id
-                _time: '',
-                //计时器id
-                _scoreboard: '',
-                //分值榜
-                scoreboard: '',
-                //排行榜
-                rankboard: '',
-            }
-        },
-        methods: {
-            countTime () {
-                let time = new Date();
-                let hour = time.getHours();
-                hour = hour < 10 ? '0' + hour : hour;
+export default {
+    components: {
+        HeadBar
+    },
+    data() {
+        return {
+            //时钟字符串
+            timeString: "00:00:00",
+            //计时器id
+            _time: "",
+            //计时器id
+            _scoreboard: "",
+            //分值榜
+            scoreboard: "",
+            //排行榜
+            rankboard: ""
+        };
+    },
+    methods: {
+        countTime() {
+            let time = new Date();
+            let hour = time.getHours();
+            hour = hour < 10 ? "0" + hour : hour;
 
-                let min = time.getMinutes();
-                min = min < 10 ? '0' + min : min;
+            let min = time.getMinutes();
+            min = min < 10 ? "0" + min : min;
 
-                let sec = time.getSeconds();
-                sec = sec < 10 ? '0' + sec : sec;
+            let sec = time.getSeconds();
+            sec = sec < 10 ? "0" + sec : sec;
 
-                this.timeString = hour + ':' + min + ':' + sec;
-            },
-            showChange (name) {
-                this.show = name;
-            },
-            getScoreboard () {
-                this.$get('/scoreboard').then(resp => {
-                    this.scoreboard = resp;
-                }).catch(error => console.log(error));
-
-                this.$get('/challenge_rank').then(resp => {
-                    this.rankboard = resp;
-                }).catch(error => console.log(error));
-            },
+            this.timeString = hour + ":" + min + ":" + sec;
         },
-        created () {
-            this.countTime();
-            this.getScoreboard();
-            this._time = setInterval(this.countTime, 300);
-            this._scoreboard = setInterval(this.getScoreboard, this.$time);
+        showChange(name) {
+            this.show = name;
         },
-        beforeDestroy () {
-            clearInterval(this._time);
-            clearInterval(this._scoreboard);
+        getScoreboard() {
+            ajax.get("/scoreboard/top/100")
+                .then(resp => {
+                    console.log(resp);
+                    this.scoreboard = []
+                    for(var i in resp.data) {
+                        var user = resp.data[i];
+                        var score = 0;
+                        for(var s in user.solves)
+                            score += user.solves[s].value;
+                        this.scoreboard.push({
+                            id: user.id,
+                            name: user.name,
+                            score: score,
+                        })
+                    }
+                })
+                .catch(error => console.log(error));
         }
+    },
+    created() {
+        this.countTime();
+        this.getScoreboard();
+        this._time = setInterval(this.countTime, 300);
+        this._scoreboard = setInterval(this.getScoreboard, this.$time);
+    },
+    beforeDestroy() {
+        clearInterval(this._time);
+        clearInterval(this._scoreboard);
     }
+};
 </script>
 
 <style scoped>
@@ -119,7 +117,7 @@ library.add(faSpinner);
     display: flex;
     justify-content: center;
     align-items: center;
-    background: url('../../static/images/back.png') no-repeat;
+    background: url("../../static/images/back.png") no-repeat;
     background-position: center center;
     background-size: cover;
 }
@@ -143,11 +141,11 @@ library.add(faSpinner);
     align-items: center;
 }
 .time {
-    height: 150px;
-    line-height: 150px;
+    height: 30px;
+    line-height: 30px;
     width: 600px;
     margin-top: 25px;
-    font-size: 90px;
+    font-size: 20px;
     font-weight: bold;
 }
 .tag-container {
@@ -197,7 +195,7 @@ library.add(faSpinner);
     line-height: 40px;
     text-align: center;
 }
-.score-num  {
+.score-num {
     width: 200px;
 }
 .link,
