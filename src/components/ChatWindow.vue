@@ -38,7 +38,7 @@
             <div v-if="!enabled"></div>
             <textarea
                 v-if="!muted && enabled"
-                placeholder="flag格式: LCTF{xxxxx} 请提交完整字符串"
+                placeholder="flag格式: minil{xxxxx} 请提交完整字符串"
                 v-model="message"
                 @keydown.enter.prevent="send()"
                 ref="textarea"
