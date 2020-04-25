@@ -18,7 +18,6 @@
             </div>
             <div class="register-container" v-show="!showLogin">
                 <input type="text" placeholder="团队名" v-model="registerName">
-                <input type="text" placeholder="学校" v-model="registerSchool">
                 <input type="text"  placeholder="登陆邮箱" v-model="registerEmail">
                 <input type="password"  placeholder="登陆密码" v-model="registerPassword">
                 <input type="password"  placeholder="重复密码" v-model="registerPasswordRepeat" @keydown.enter="register">
@@ -52,7 +51,6 @@ export default {
             loginName: '',
             loginPassword: '',
             registerName: '',
-            registerSchool: '',
             registerEmail: '',
             registerPassword: '',
             registerPasswordRepeat: '',

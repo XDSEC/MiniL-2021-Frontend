@@ -167,8 +167,7 @@ export default {
             //未读消息数
             cnt_unread: {},
             //公告的id
-            notice: "",
-            chatprops: {}
+            notice: ""
         };
     },
     methods: {
@@ -184,11 +183,11 @@ export default {
             this.active = id;
             // debugger;
             this.updateChallenge(id).then(chall => {
-                if (this.chatStorage[id].length === 0)
-                    this.recv(chall.description, 2);
-                if (this.chatStorage[id].length - 1 < chall.hints.length) {
-                    for (var h of chall.hints) {
-                        ajax.get("/hints/" + h.id).then(res =>
+                var current = this.chatStorage[id];
+                if (current.length === 0) this.recv(chall.description, 2);
+                if (current.length - 1 < chall.hints.length) {
+                    for (var h = current.length - 1; h < chall.hints; h++) {
+                        ajax.get("/hints/" + chall.hints[h]).then(res =>
                             this.recv(res.data.content, 2)
                         );
                     }
@@ -209,23 +208,25 @@ export default {
                         this.challs[this.active].id;
                     ajax.get(url)
                         .then(res => {
-                            if (res.remaining_time === undefined) {
-                                return ajax.post(url).then(res => {
-                                    if (res.success === true) {
-                                        this.recv("成功获取题目环境。");
-                                        this.recv(
-                                            "注意：同一账户同时只能开启同一题目，请注意合理安排做题时间"
-                                        );
-                                    } else this.recv(res.msg);
-                                    return ajax.get(url);
-                                });
-                            } else return res;
+                            if (res.remaining_time !== undefined) return res;
+                            return ajax.post(url).then(res => {
+                                if (res.success === false) {
+                                    this.recv(res.msg);
+                                    return null;
+                                }
+                                this.recv("成功获取题目环境。");
+                                this.recv(
+                                    "注意：同一账户同时只能开启同一题目，请注意合理安排做题时间"
+                                );
+                                return ajax.get(url);
+                            });
                         })
                         .catch(err => {
                             if (err.status === 404)
                                 this.recv("本题🈚️题目环境");
                         })
                         .then(chall => {
+                            if (chall === null) return;
                             this.recv(chall.domain);
                             this.recv(
                                 "剩余时间：" + chall.remaining_time + "秒"
@@ -312,22 +313,29 @@ export default {
                 .then(res => {
                     var chall = res.data;
                     chall.done = this.challs[this.active].done;
-                    var avatar_url = chall.name.match(/\[.*\]/g)
-                    if(avatar_url !== null) {
-                        chall.name = chall.name.replace(/\[.*\]/g, '')
-                        chall.avatar = avatar_url[0].replace(/\[(.*)\]/g, "$1")
+                    var avatar_url = chall.name.match(/\[.*\]/g);
+                    if (avatar_url !== null) {
+                        chall.name = chall.name.replace(/\[.*\]/g, "");
+                        chall.avatar = avatar_url[0].replace(/\[(.*)\]/g, "$1");
                     }
                     Vue.set(this.challs, this.active, chall);
                     return chall;
-                }).catch(err => console.log(err));
+                })
+                .catch(err => console.log(err));
         },
         generateList(challenges, solved) {
             for (let i in challenges) {
                 let type = challenges[i].category.toLowerCase();
-                var avatar_url = challenges[i].name.match(/\[.*\]/g)
-                if(avatar_url !== null) {
-                    challenges[i].name = challenges[i].name.replace(/\[.*\]/g, '')
-                    challenges[i].avatar = avatar_url[0].replace(/\[(.*)\]/g, "$1")
+                var avatar_url = challenges[i].name.match(/\[.*\]/g);
+                if (avatar_url !== null) {
+                    challenges[i].name = challenges[i].name.replace(
+                        /\[.*\]/g,
+                        ""
+                    );
+                    challenges[i].avatar = avatar_url[0].replace(
+                        /\[(.*)\]/g,
+                        "$1"
+                    );
                 }
 
                 if (this.chatStorage[i] === undefined) {
