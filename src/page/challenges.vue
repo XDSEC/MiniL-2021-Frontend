@@ -6,7 +6,7 @@
                 <div class="left-container">
                     <div class="group-container">
                         <div
-                            v-if="this.notice !== ''"
+                            v-if="notice !== null"
                             :key="notice"
                             :class="['talk-item', active == notice ? 'active' : '']"
                             @click="chooseTalk(notice)"
@@ -18,8 +18,8 @@
                             <div class="text">
                                 <div class="name">{{challs[notice].name}}</div>
                                 <div
-                                    v-if="chatStorage[notice].length > 0"
-                                >{{chatStorage[notice][chatStorage[notice].length - 1].text}}</div>
+                                    v-if="chat_storage[notice].length > 0"
+                                >{{chat_storage[notice][chat_storage[notice].length - 1].text}}</div>
                             </div>
                             <div
                                 class="unread"
@@ -45,7 +45,6 @@
                             </div>
                             <div
                                 class="group-number"
-                                v-if="key !== 'notice'"
                             >{{cnt_done[key] + '/' + Object.keys(catagorized_challs[key]).length}}</div>
                         </div>
                         <!-- 生成会话头像 -->
@@ -65,8 +64,8 @@
                                 <div class="text">
                                     <div class="name">{{value2.name}}</div>
                                     <div
-                                        v-if="chatStorage[key2].length > 0"
-                                    >{{chatStorage[key2][chatStorage[key2].length - 1].text}}</div>
+                                        v-if="chat_storage[key2].length > 0"
+                                    >{{chat_storage[key2][chat_storage[key2].length - 1].text}}</div>
                                 </div>
                                 <div
                                     class="unread"
@@ -77,7 +76,7 @@
                             <div
                                 v-for="(value3, key3) in catagorized_challs[key]"
                                 :key="key3"
-                                :class="['talk-item', key3 === notice ? '' : 'disable', active == key3 ? 'active' : '']"
+                                :class="['talk-item', 'disable', active == key3 ? 'active' : '']"
                                 @click="chooseTalk(key3)"
                                 v-if="value3.done != 0"
                             >
@@ -87,8 +86,8 @@
                                 <div class="text">
                                     <div class="name">{{value3.name}}</div>
                                     <div
-                                        v-if="chatStorage[key3].length > 0"
-                                    >{{chatStorage[key3][chatStorage[key3].length - 1].text}}</div>
+                                        v-if="chat_storage[key3].length > 0"
+                                    >{{chat_storage[key3][chat_storage[key3].length - 1].text}}</div>
                                 </div>
                                 <div
                                     class="unread"
@@ -112,7 +111,7 @@
                 </div>
                 <ChatWindow
                     ref="chat"
-                    v-bind:talkList="chatStorage[active]"
+                    v-bind:talkList="chat_storage[active]"
                     v-bind:enabled="active !== null"
                     v-bind:title="active!==null?challs[active].name:''"
                     v-bind:avatar="active!==null?challs[active].avatar:''"
@@ -150,10 +149,19 @@ export default {
     },
     data() {
         return {
+            persisted: [
+                "chat_storage",
+                "challs",
+                "catagorized_challs",
+                "cnt_unread",
+                "cnt_done",
+                "has_category",
+                "notice"
+            ],
             //当前激活的会话
             active: null,
             //聊天记录
-            chatStorage: {},
+            chat_storage: {},
             //计时器id
             _time: "",
             //会话分组列表
@@ -167,7 +175,7 @@ export default {
             //未读消息数
             cnt_unread: {},
             //公告的id
-            notice: "",
+            notice: null,
             //注册表
             func_registry: {}
         };
@@ -185,7 +193,7 @@ export default {
             this.active = id;
             // debugger;
             this.updateChallenge(id).then(chall => {
-                var current = this.chatStorage[id];
+                var current = this.chat_storage[id];
                 var cnt_hints = chall.hints.length;
                 if (current.length === 0) this.recv(chall.description, 2);
                 if (current.length - 1 < cnt_hints) {
@@ -271,11 +279,11 @@ export default {
                     challenges[i].avatar = avatar_url[2];
                 }
 
-                if (this.chatStorage[i] === undefined) {
-                    Vue.set(this.chatStorage, i, []);
+                if (this.chat_storage[i] === undefined) {
+                    Vue.set(this.chat_storage, i, []);
                     Vue.set(this.cnt_unread, i, 0);
                 }
-                let recvd_cnt = this.chatStorage[i].filter(o => o.admin === 2)
+                let recvd_cnt = this.chat_storage[i].filter(o => o.admin === 2)
                     .length;
                 this.cnt_unread[i] = challenges[i].hints - recvd_cnt + 1;
                 if (type === "notice") {
@@ -301,64 +309,22 @@ export default {
             }
         },
         cache() {
-            sessionStorage.setItem("challs", JSON.stringify(this.challs));
-            sessionStorage.setItem(
-                "chatStorage",
-                JSON.stringify(this.chatStorage)
-            );
-            sessionStorage.setItem(
-                "catagorized_challs",
-                JSON.stringify(this.catagorized_challs)
-            );
-            sessionStorage.setItem(
-                "cnt_unread",
-                JSON.stringify(this.cnt_unread)
-            );
-            sessionStorage.setItem("cnt_done", JSON.stringify(this.cnt_done));
-            sessionStorage.setItem("type", JSON.stringify(this.has_category));
+            for (var key of this.persisted) {
+                var val = this[key];
+                sessionStorage.setItem(key, JSON.stringify(this[key]));
+            }
         }
     },
     created() {
         //读取缓存
-        let challs =
-            sessionStorage.getItem("challs") &&
-            JSON.parse(sessionStorage.getItem("challs"));
-        let chatStorage =
-            sessionStorage.getItem("chatStorage") &&
-            JSON.parse(sessionStorage.getItem("chatStorage"));
-        let catagorized_challs =
-            sessionStorage.getItem("catagorized_challs") &&
-            JSON.parse(sessionStorage.getItem("catagorized_challs"));
-        let cnt_unread =
-            sessionStorage.getItem("cnt_unread") &&
-            JSON.parse(sessionStorage.getItem("cnt_unread"));
-        let cnt_done =
-            sessionStorage.getItem("cnt_done") &&
-            JSON.parse(sessionStorage.getItem("cnt_done"));
-        let has_category =
-            sessionStorage.getItem("type") &&
-            JSON.parse(sessionStorage.getItem("type"));
-        //若有缓存则直接使用
-        if (
-            challs != null &&
-            chatStorage != null &&
-            catagorized_challs != null &&
-            cnt_done != null &&
-            has_category != null
-        ) {
-            this.challs = challs;
-            this.chatStorage = chatStorage;
-            this.catagorized_challs = catagorized_challs;
-            this.cnt_unread = cnt_unread;
-            this.cnt_done = cnt_done;
-            this.has_category = has_category;
-            sessionStorage.clear();
-            this.getChallenges();
+        for (var key of this.persisted) {
+            var val =
+                sessionStorage.getItem(key) &&
+                JSON.parse(sessionStorage.getItem(key));
+            if (val !== null) this[key] = val;
         }
-        //若无缓存则加载
-        else {
-            this.getChallenges();
-        }
+        this.getChallenges();
+
         this._time = setInterval(() => {
             if (this.active !== null) this.updateChallenge(this.active);
             this.getChallenges();
