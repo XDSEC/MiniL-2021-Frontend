@@ -117,7 +117,7 @@
                     v-bind:title="active!==null?challs[active].name:''"
                     v-bind:avatar="active!==null?challs[active].avatar:''"
                     v-bind:muted="active!==null && challs[active].done"
-                    v-on:send_msg="send"
+                    v-on:send_msg="handle_send"
                 ></ChatWindow>
             </div>
         </div>
@@ -167,7 +167,9 @@ export default {
             //未读消息数
             cnt_unread: {},
             //公告的id
-            notice: ""
+            notice: "",
+            //注册表
+            func_registry: {}
         };
     },
     methods: {
@@ -184,109 +186,46 @@ export default {
             // debugger;
             this.updateChallenge(id).then(chall => {
                 var current = this.chatStorage[id];
+                var cnt_hints = chall.hints.length;
                 if (current.length === 0) this.recv(chall.description, 2);
-                if (current.length - 1 < chall.hints.length) {
-                    for (var h = current.length - 1; h < chall.hints; h++) {
-                        ajax.get("/hints/" + chall.hints[h]).then(res =>
+                if (current.length - 1 < cnt_hints) {
+                    for (var h = current.length - 1; h < cnt_hints; h++) {
+                        ajax.get("/hints/" + chall.hints[h].id).then(res =>
                             this.recv(res.data.content, 2)
                         );
                     }
                 }
             });
         },
-        send(msg) {
-            console.log(msg);
-            switch (msg) {
-                case "查询分值":
-                    this.updateChallenge(this.active).then(chall => {
-                        this.recv("当前题目分值" + chall.value);
-                    });
-                    break;
-                case "获取环境":
-                    var url =
-                        "/container?challenge_id=" +
-                        this.challs[this.active].id;
-                    ajax.get(url)
-                        .then(res => {
-                            if (res.remaining_time !== undefined) return res;
-                            return ajax.post(url).then(res => {
-                                if (res.success === false) {
-                                    this.recv(res.msg);
-                                    return null;
-                                }
-                                this.recv("成功获取题目环境。");
-                                this.recv(
-                                    "注意：同一账户同时只能开启同一题目，请注意合理安排做题时间"
-                                );
-                                return ajax.get(url);
-                            });
-                        })
-                        .catch(err => {
-                            if (err.status === 404)
-                                this.recv("本题🈚️题目环境");
-                        })
-                        .then(chall => {
-                            if (chall === null) return;
-                            this.recv(chall.domain);
-                            this.recv(
-                                "剩余时间：" + chall.remaining_time + "秒"
-                            );
-                        });
-                    break;
-                case "延长时限":
-                    var url =
-                        "/container?challenge_id=" +
-                        this.challs[this.active].id;
-                    ajax.request("PATCH", url)
-                        .then(res => {
-                            if (res.success === true) {
-                                this.recv("延长时限成功");
-                                return;
-                            } else this.recv(res.msg);
-                        })
-                        .catch(err => console.log(err));
-                    break;
-                case "销毁环境":
-                    var url =
-                        "/container?challenge_id=" +
-                        this.challs[this.active].id;
-                    ajax.request("DELETE", url)
-                        .then(res => {
-                            if (res.success === true) {
-                                this.recv("销毁成功");
-                                return;
-                            } else this.recv(res.msg);
-                        })
-                        .catch(err => console.log(err));
-                    break;
-                default:
-                    ajax.post("/challenges/attempt", {
-                        challenge_id: this.challs[this.active].id,
-                        submission: msg
-                    })
-                        .then(resp => {
-                            if (resp.success == true) return resp.data;
-                            throw resp;
-                        })
-                        .catch(error => console.log(error))
-                        .then(resp => {
-                            this.recv(resp.message);
-                            if (resp.status == "correct") {
-                                var category = this.challs[
-                                    this.active
-                                ].category.toLowerCase();
-                                this.catagorized_challs[category][
-                                    this.active
-                                ].done = 1;
-                                Vue.set(this.challs[this.active], "done", 1);
-                                Vue.set(
-                                    this.cnt_done,
-                                    category,
-                                    this.cnt_done[category] + 1
-                                );
-                            }
-                        });
+        handle_send(msg) {
+            if (this.func_registry[msg] !== undefined) {
+                this.func_registry[msg]();
+                return;
             }
+            ajax.post("/challenges/attempt", {
+                challenge_id: this.challs[this.active].id,
+                submission: msg
+            })
+                .then(resp => {
+                    if (resp.success == true) return resp.data;
+                    throw resp;
+                })
+                .catch(error => console.log(error))
+                .then(resp => {
+                    this.recv(resp.message);
+                    if (resp.status == "correct") {
+                        var category = this.challs[
+                            this.active
+                        ].category.toLowerCase();
+                        this.catagorized_challs[category][this.active].done = 1;
+                        Vue.set(this.challs[this.active], "done", 1);
+                        Vue.set(
+                            this.cnt_done,
+                            category,
+                            this.cnt_done[category] + 1
+                        );
+                    }
+                });
         },
         getChallenges() {
             ajax.get("/challenges")
@@ -326,16 +265,10 @@ export default {
         generateList(challenges, solved) {
             for (let i in challenges) {
                 let type = challenges[i].category.toLowerCase();
-                var avatar_url = challenges[i].name.match(/\[.*\]/g);
+                var avatar_url = challenges[i].name.match(/(.*)\[(.*)\]/);
                 if (avatar_url !== null) {
-                    challenges[i].name = challenges[i].name.replace(
-                        /\[.*\]/g,
-                        ""
-                    );
-                    challenges[i].avatar = avatar_url[0].replace(
-                        /\[(.*)\]/g,
-                        "$1"
-                    );
+                    challenges[i].name = avatar_url[1];
+                    challenges[i].avatar = avatar_url[2];
                 }
 
                 if (this.chatStorage[i] === undefined) {
@@ -431,6 +364,58 @@ export default {
             this.getChallenges();
             this.cache();
         }, this.$time);
+
+        var docker_request = method => {
+            if (this.challs[this.active].type !== "dynamic_docker")
+                return new Promise((rs, rj) => rj("本题🈚️docker环境"));
+            var url = "/container?challenge_id=" + this.challs[this.active].id;
+            return ajax.request(method, url).then(res => {
+                if (res.success === false) throw res.msg;
+                return res;
+            });
+        };
+        this.func_registry = {
+            查询分值: () =>
+                this.updateChallenge(this.active).then(chall => {
+                    this.recv("当前题目分值" + chall.value);
+                }),
+            获取环境: () => {
+                docker_request("GET")
+                    .then(res => {
+                        if (res.remaining_time !== undefined) return res;
+                        return docker_request("POST").then(res => {
+                            this.recv("成功获取题目环境。");
+                            this.recv(
+                                "注意：同一账户同时只能开启同一题目，请注意合理安排做题时间"
+                            );
+                            return docker_request("GET");
+                        });
+                    })
+                    .then(chall => {
+                        this.recv(chall.domain);
+                        this.recv("剩余时间：" + chall.remaining_time + "秒");
+                    })
+                    .catch(err => this.recv(err));
+            },
+            延长时限: () => {
+                docker_request("PATCH")
+                    .then(res => this.recv("延长时限成功"))
+                    .catch(err => this.recv(err));
+            },
+            销毁环境: () => {
+                docker_request("DELETE")
+                    .then(res => this.recv("销毁环境成功"))
+                    .catch(err => this.recv(err));
+            },
+            重置环境: () => {
+                docker_request("POST")
+                    .then(res => {
+                        this.recv("成功重置题目环境。");
+                        return this.func_registry.获取环境();
+                    })
+                    .catch(err => this.recv(err));
+            }
+        };
     },
     beforeDestroy() {
         //缓存
