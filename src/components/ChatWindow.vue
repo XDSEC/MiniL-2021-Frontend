@@ -3,7 +3,7 @@
         <!-- 顶部显示回话标题 -->
         <div class="title-container">{{title}}</div>
         <!-- 聊天信息主体 -->
-        <div class="info-container" v-if="enabled">
+        <div class="info-container">
             <a
                 ref="scr"
                 class="scroller"
@@ -16,7 +16,7 @@
                 :class="[item.admin != 0 ? '' : 'mine','info-item']"
             >
                 <div class="avatar">
-                    <img :src="item.avatar" />
+                    <img :src="item.admin != 0 ? avatar : '../../static/images/avatar.jpg'" />
                 </div>
                 <div class="text-container">
                     <div class="text" v-html="item.text" v-if="item.admin != 0"></div>
@@ -27,7 +27,7 @@
         </div>
         <!-- 输入框主体 -->
         <div class="input-container">
-            <div class="tools-bar" v-if="enabled">
+            <div class="tools-bar">
                 <font-awesome-icon
                     :icon="['far', 'grin']"
                     width="2em"
@@ -71,15 +71,14 @@
                     />
                 </nav>
             </div>
-            <div v-if="!enabled"></div>
             <textarea
-                v-if="!muted && enabled"
+                v-if="!muted"
                 placeholder="flag格式: minil{xxxxx} 请提交完整字符串"
                 v-model="message"
                 @keydown.enter.prevent="send()"
                 ref="textarea"
             ></textarea>
-            <textarea v-if="muted && enabled" disabled placeholder="已经不能输入了"></textarea>
+            <textarea v-if="muted" disabled placeholder="已经不能输入了"></textarea>
         </div>
     </div>
 </template>
@@ -97,7 +96,7 @@ import { faDocker } from "@fortawesome/free-brands-svg-icons";
 
 library.add(faPlayCircle, faStopCircle, faClock, faGrin, faDocker, faRedoAlt);
 export default {
-    props: ["talkList", "enabled", "avatar", "title", "muted"],
+    props: ["talkList", "avatar", "title", "muted"],
     data() {
         return {
             message: "",
@@ -108,7 +107,6 @@ export default {
         send(msg = this.message) {
             if (msg === "" || this.muted) return;
             this.talkList.push({
-                avatar: "../../static/images/avatar.jpg",
                 text: msg,
                 admin: 0
             });
@@ -118,7 +116,6 @@ export default {
         },
         recv(msg, role = 1) {
             this.talkList.push({
-                avatar: this.avatar,
                 text: msg,
                 admin: role
             });

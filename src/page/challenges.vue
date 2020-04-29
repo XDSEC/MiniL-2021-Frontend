@@ -111,12 +111,12 @@
                 </div>
                 <ChatWindow
                     ref="chat"
-                    v-bind:talkList="chat_storage[active]"
-                    v-bind:enabled="active !== null"
-                    v-bind:title="active!==null?challs[active].name:''"
-                    v-bind:avatar="active!==null?challs[active].avatar:''"
-                    v-bind:muted="active!==null && challs[active].done"
-                    v-on:send_msg="handle_send"
+                    v-if="active !== null"
+                    :talkList="chat_storage[active]"
+                    :title="challs[active].name"
+                    :avatar="challs[active].avatar"
+                    :muted="challs[active].done || active == notice"
+                    @send_msg="handle_send"
                 ></ChatWindow>
             </div>
         </div>
@@ -192,18 +192,7 @@ export default {
             this.cnt_unread[id] = 0;
             this.active = id;
             // debugger;
-            this.updateChallenge(id).then(chall => {
-                var current = this.chat_storage[id];
-                var cnt_hints = chall.hints.length;
-                if (current.length === 0) this.recv(chall.description, 2);
-                if (current.length - 1 < cnt_hints) {
-                    for (var h = current.length - 1; h < cnt_hints; h++) {
-                        ajax.get("/hints/" + chall.hints[h].id).then(res =>
-                            this.recv(res.data.content, 2)
-                        );
-                    }
-                }
-            });
+            this.updateHints(id);
         },
         handle_send(msg) {
             if (this.func_registry[msg] !== undefined) {
@@ -259,16 +248,37 @@ export default {
                 .get("/challenges/" + this.challs[index].id)
                 .then(res => {
                     var chall = res.data;
-                    chall.done = this.challs[this.active].done;
+                    chall.done = this.challs[index].done;
                     var avatar_url = chall.name.match(/\[.*\]/g);
                     if (avatar_url !== null) {
                         chall.name = chall.name.replace(/\[.*\]/g, "");
                         chall.avatar = avatar_url[0].replace(/\[(.*)\]/g, "$1");
                     }
-                    Vue.set(this.challs, this.active, chall);
+                    Vue.set(this.challs, index, chall);
                     return chall;
                 })
                 .catch(err => console.log(err));
+        },
+        updateHints(index) {
+            return this.updateChallenge(index).then(chall => {
+                var current = this.chat_storage[index];
+                var cnt_hints = chall.hints.length;
+                if (current.length === 0)
+                    current.push({
+                        text: chall.description,
+                        admin: 2
+                    });
+                if (current.length - 1 < cnt_hints) {
+                    for (var h = current.length - 1; h < cnt_hints; h++) {
+                        ajax.get("/hints/" + chall.hints[h].id).then(res =>
+                            current.push({
+                                text: res.data.content,
+                                admin: 2
+                            })
+                        );
+                    }
+                }
+            });
         },
         generateList(challenges, solved) {
             for (let i in challenges) {
@@ -285,7 +295,8 @@ export default {
                 }
                 let recvd_cnt = this.chat_storage[i].filter(o => o.admin === 2)
                     .length;
-                this.cnt_unread[i] = challenges[i].hints - recvd_cnt + 1;
+                this.cnt_unread[i] =
+                    this.cnt_unread[i] + challenges[i].hints - recvd_cnt + 1;
                 if (type === "notice") {
                     this.notice = i;
                     continue;
@@ -299,6 +310,8 @@ export default {
                 Vue.set(this.catagorized_challs[type], i, challenges[i]);
             }
             this.challs = challenges;
+            for (var i in this.challs)
+                if (this.cnt_unread[i] !== 0) this.updateHints(i);
             //重新计算答题进度
             for (let i in this.catagorized_challs) {
                 let done = 0;
