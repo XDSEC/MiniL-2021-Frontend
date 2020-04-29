@@ -10,7 +10,10 @@ export default {
 }
 </script>
 
-<style >
+<style>
+    *{
+        overflow: hidden;
+    }
 .app-container {
   height: 100%;
   width: 100%;

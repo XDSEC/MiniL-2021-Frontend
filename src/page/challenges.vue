@@ -243,6 +243,9 @@ export default {
                 )
                 .catch(err => console.log(err));
         },
+        get_avatar(qq_id) {
+            return `https://q1.qlogo.cn/g?b=qq&nk=${qq_id}&s=640`;
+        },
         updateChallenge(index) {
             return ajax
                 .get("/challenges/" + this.challs[index].id)
@@ -252,7 +255,10 @@ export default {
                     var avatar_url = chall.name.match(/\[.*\]/g);
                     if (avatar_url !== null) {
                         chall.name = chall.name.replace(/\[.*\]/g, "");
-                        chall.avatar = avatar_url[0].replace(/\[(.*)\]/g, "$1");
+                        var avatar = avatar_url[0].replace(/\[(.*)\]/g, "$1");
+                        chall.avatar = isNaN(avatar)
+                            ? avatar
+                            : this.get_avatar(avatar);
                     }
                     Vue.set(this.challs, index, chall);
                     return chall;
@@ -286,7 +292,9 @@ export default {
                 var avatar_url = challenges[i].name.match(/(.*)\[(.*)\]/);
                 if (avatar_url !== null) {
                     challenges[i].name = avatar_url[1];
-                    challenges[i].avatar = avatar_url[2];
+                    challenges[i].avatar = isNaN(avatar_url[2])
+                        ? avatar_url[2]
+                        : this.get_avatar(avatar_url[2]);
                 }
 
                 if (this.chat_storage[i] === undefined) {
