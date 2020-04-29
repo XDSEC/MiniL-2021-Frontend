@@ -70,7 +70,7 @@ html {
     position: absolute;
     width: 100%;
     height: 100%;
-    background-image: url("../../static/images/giphy.gif");
+    /* background-image: url("../../static/images/giphy.gif"); */
     background-repeat: no-repeat;
     background-size: cover;
     z-index: -1;

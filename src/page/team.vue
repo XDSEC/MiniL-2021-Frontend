@@ -202,7 +202,7 @@ export default {
     display: flex;
     justify-content: center;
     align-items: center;
-    background: url("../../static/images/back.png") no-repeat;
+    background: #ededed;
     background-position: center center;
     background-size: cover;
 }
@@ -224,8 +224,7 @@ export default {
 .mine-top-container {
     height: 295px;
     width: 100%;
-    background: rgb(11, 84, 111);
-    background: url("../../static/images/mine-back.jpg") no-repeat;
+    background: rgb(171, 219, 238);
     background-position: center center;
     background-size: cover;
 

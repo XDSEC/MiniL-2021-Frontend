@@ -16,10 +16,10 @@
                 :class="[item.admin != 0 ? '' : 'mine','info-item']"
             >
                 <div class="avatar">
-                    <img :src="item.admin != 0 ? avatar : '../../static/images/avatar.jpg'" />
+                    <img :src="item.admin != 0 ? avatar : '../../static/images/avatar.png'" />
                 </div>
                 <div class="text-container">
-                    <div class="text" v-html="item.text" v-if="item.admin != 0"></div>
+                    <vue-simple-markdown :source="item.text" v-if="item.admin != 0" class="text"></vue-simple-markdown>
                     <div class="text" v-if="item.admin === 0">{{item.text}}</div>
                 </div>
             </div>

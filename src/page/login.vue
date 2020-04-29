@@ -9,7 +9,7 @@
                 </div>
             </div>
             <div class="middle" v-show="showLogin">
-                <img src="../../static/images/avatar.jpg">
+                <img src="../../static/images/avatar.png">
             </div>
             <div class="bottom" v-show="showLogin">
                 <input type="text" placeholder="团队名" v-model="loginName">
@@ -138,7 +138,7 @@ export default {
     display: flex;
     justify-content: center;
     align-items: center;
-    background: url('../../static/images/back.png') no-repeat;
+    background: #ededed;
     background-position: center center;
     background-size: cover;
 }

@@ -412,7 +412,7 @@ export default {
     display: flex;
     justify-content: center;
     align-items: center;
-    background: url("../../static/images/back.png") no-repeat;
+    background: #ededed;
     background-position: center center;
     background-size: cover;
 }

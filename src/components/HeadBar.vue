@@ -32,7 +32,7 @@
                 @mouseover="logout = true"
                 @mouseout="logout = false"
             >
-                <img src="../../static/images/avatar.jpg" title="登出" v-show="!logout" />
+                <img src="../../static/images/avatar.png" title="登出" v-show="!logout" />
                 <div class="logout" v-show="logout">
                     <font-awesome-icon icon="sign-out-alt" />
                 </div>
