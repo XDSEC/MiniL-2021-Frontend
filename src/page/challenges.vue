@@ -38,7 +38,7 @@
                         <div class="group" @click="showToggle(key)">
                             <div class="group-name">
                                 <font-awesome-icon
-                                    :icon="has_category[key] ? 'chevron-down' : 'chevron-right'"
+                                    :icon="collapsed[key] ? 'chevron-down' : 'chevron-right'"
                                     class="icon"
                                 />
                                 {{key.toUpperCase()}}
@@ -48,7 +48,7 @@
                             >{{cnt_done[key] + '/' + Object.keys(catagorized_challs[key]).length}}</div>
                         </div>
                         <!-- 生成会话头像 -->
-                        <div v-show="has_category[key]" class="group-list">
+                        <div v-show="collapsed[key]" class="group-list">
                             <!-- 此处偷懒，其实可以先sort好List再渲染 -->
                             <!-- 先生成还没完成的题目 -->
                             <div
@@ -115,7 +115,7 @@
                     :talkList="chat_storage[active]"
                     :title="challs[active].name"
                     :avatar="challs[active].avatar"
-                    :muted="challs[active].done || active == notice"
+                    :muted="active == notice"
                     @send_msg="handle_send"
                 ></ChatWindow>
             </div>
@@ -155,7 +155,7 @@ export default {
                 "catagorized_challs",
                 "cnt_unread",
                 "cnt_done",
-                "has_category",
+                "collapsed",
                 "notice"
             ],
             //当前激活的会话
@@ -165,7 +165,7 @@ export default {
             //计时器id
             _time: "",
             //会话分组列表
-            has_category: {},
+            collapsed: {},
             //服务器返回的原始数据
             challs: {},
             //左边的会话列表
@@ -182,7 +182,7 @@ export default {
     },
     methods: {
         showToggle(key) {
-            this.has_category[key] = !this.has_category[key];
+            this.collapsed[key] = !this.collapsed[key];
         },
         recv(msg, role) {
             this.$refs.chat.recv(msg, role);
@@ -224,70 +224,88 @@ export default {
                     }
                 });
         },
-        getChallenges() {
-            ajax.get("/challenges")
-                .then(resp => resp.data)
-                .catch(error => {
-                    alert("请重新登陆");
-                    console.log(error);
-                    localStorage.removeItem("team_id");
-                    this.$router.push("/login");
-                })
-                .then(data =>
-                    ajax.get("/users/me/solves").then(resp => {
-                        var solved = {};
-                        if (resp.success !== true) throw resp;
-                        for (var i of resp.data) solved[i.challenge_id] = true;
-                        this.generateList(data, solved);
-                    })
-                )
-                .catch(err => console.log(err));
+        async getChallenges() {
+            try {
+                var challs = await ajax.get("/challenges")
+                if (challs.success) challs = challs.data;
+                else throw challs;
+                var resp = await ajax.get("/users/me/solves")
+                var solved = {};
+                if (resp.success !== true) throw resp;
+                for (var i of resp.data) solved[i.challenge_id] = true;
+                this.generateList(challs, solved);
+            } catch (error) {
+                alert("请重新登陆");
+                console.log(error);
+                localStorage.removeItem("team_id");
+                this.$router.push("/login");
+            }
         },
         get_avatar(qq_id) {
-            return `https://q1.qlogo.cn/g?b=qq&nk=${qq_id}&s=640`;
+            return `https://q2.qlogo.cn/headimg_dl?dst_uin=${qq_id}&spec=100`;
         },
-        updateChallenge(index) {
-            return ajax
-                .get("/challenges/" + this.challs[index].id)
-                .then(res => {
-                    var chall = res.data;
-                    chall.done = this.challs[index].done;
-                    var avatar_url = chall.name.match(/\[.*\]/g);
-                    if (avatar_url !== null) {
-                        chall.name = chall.name.replace(/\[.*\]/g, "");
-                        var avatar = avatar_url[0].replace(/\[(.*)\]/g, "$1");
-                        chall.avatar = isNaN(avatar)
-                            ? avatar
-                            : this.get_avatar(avatar);
-                    }
-                    Vue.set(this.challs, index, chall);
-                    return chall;
-                })
-                .catch(err => console.log(err));
-        },
-        updateHints(index) {
-            return this.updateChallenge(index).then(chall => {
-                var current = this.chat_storage[index];
-                var cnt_hints = chall.hints.length;
-                if (current.length === 0)
-                    current.push({
-                        text: chall.description,
-                        admin: 2
-                    });
-                if (current.length - 1 < cnt_hints) {
-                    for (var h = current.length - 1; h < cnt_hints; h++) {
-                        ajax.get("/hints/" + chall.hints[h].id).then(res =>
-                            current.push({
-                                text: res.data.content,
-                                admin: 2
-                            })
-                        );
-                    }
+        async updateChallenge(index) {
+            try {
+                var chall = await ajax.get("/challenges/" + this.challs[index].id);
+                if (chall.success !== true) throw chall;
+                else chall = chall.data;
+                chall.done = this.challs[index].done;
+                var avatar_url = chall.name.match(/\[.*\]/g);
+                if (avatar_url !== null) {
+                    chall.name = chall.name.replace(/\[.*\]/g, "");
+                    var avatar = avatar_url[0].replace(/\[(.*)\]/g, "$1");
+                    chall.avatar = isNaN(avatar)
+                        ? avatar
+                        : this.get_avatar(avatar);
                 }
-            });
+                Vue.set(this.challs, index, chall);
+                return chall;
+            } catch (err) { console.log(err); }
+            return null;
+        },
+        async updateHints(index) {
+            var chall = await this.updateChallenge(index);
+            if (chall === null) return;
+            var current = this.chat_storage[index];
+            var recv = text =>
+                current.push({
+                    text: text,
+                    admin: 2
+                });
+            var cnt_hints = chall.hints.length;
+            if (current.length === 0) {
+                recv(chall.description);
+                for (var h of chall.files)
+                    recv(`下载文件: [${h.split("/").slice(-1).pop().split("?")[0]}](${h})`);
+            }
+            var total = this.chat_storage[index].filter(
+                o => o.admin === 2
+            ).length;
+            var hint_start = total - chall.files.length - 1;
+            if (hint_start < cnt_hints) {
+                for (var h = hint_start; h < cnt_hints; h++) {
+                    var res = await ajax.get("/hints/" + chall.hints[h].id);
+                    recv(res.data.content);
+                }
+            }
         },
         generateList(challenges, solved) {
+            if (challenges.length != this.challs.length) {
+                var has_active = false;
+                for (let i in challenges) {
+                    if (challenges[i].id == this.active) {
+                        has_active = true;
+                        break;
+                    }
+                }
+                if (!has_active)
+                    this.active = null;
+                this.challs = {}
+                this.catagorized_challs = {}
+            }
             for (let i in challenges) {
+                var id = challenges[i].id;
+                this.challs[id] = challenges[i];
                 let type = challenges[i].category.toLowerCase();
                 var avatar_url = challenges[i].name.match(/(.*)\[(.*)\]/);
                 if (avatar_url !== null) {
@@ -297,29 +315,29 @@ export default {
                         : this.get_avatar(avatar_url[2]);
                 }
 
-                if (this.chat_storage[i] === undefined) {
-                    Vue.set(this.chat_storage, i, []);
-                    Vue.set(this.cnt_unread, i, 0);
+                if (this.chat_storage[id] === undefined) {
+                    Vue.set(this.chat_storage, id, []);
+                    Vue.set(this.cnt_unread, id, 0);
                 }
-                let recvd_cnt = this.chat_storage[i].filter(o => o.admin === 2)
-                    .length;
-                this.cnt_unread[i] =
-                    this.cnt_unread[i] + challenges[i].hints - recvd_cnt + 1;
+                let recvd_cnt = this.chat_storage[id].filter(
+                    o => o.admin === 2
+                ).length;
+                var cnt_new = challenges[i].hints + challenges[i].files - recvd_cnt + 1;
+                if (cnt_new > 0)
+                    this.updateHints(id);
+                this.cnt_unread[id] = cnt_new + this.cnt_unread[id];
                 if (type === "notice") {
-                    this.notice = i;
+                    this.notice = id;
                     continue;
                 }
                 challenges[i].done = solved[challenges[i].id] ? 1 : 0;
-                if (challenges[i].done) this.cnt_unread[i] = 0;
-                if (this.has_category[type] === undefined) {
-                    Vue.set(this.has_category, type, true);
+                if (challenges[i].done) this.cnt_unread[id] = 0;
+                if (this.collapsed[type] === undefined)
+                    Vue.set(this.collapsed, type, false);
+                if (this.catagorized_challs[type] === undefined)
                     Vue.set(this.catagorized_challs, type, {});
-                }
-                Vue.set(this.catagorized_challs[type], i, challenges[i]);
+                Vue.set(this.catagorized_challs[type], id, challenges[i]);
             }
-            this.challs = challenges;
-            for (var i in this.challs)
-                if (this.cnt_unread[i] !== 0) this.updateHints(i);
             //重新计算答题进度
             for (let i in this.catagorized_challs) {
                 let done = 0;
@@ -362,45 +380,57 @@ export default {
             });
         };
         this.func_registry = {
-            查询分值: () =>
-                this.updateChallenge(this.active).then(chall => {
-                    this.recv("当前题目分值" + chall.value);
-                }),
-            获取环境: () => {
-                docker_request("GET")
-                    .then(res => {
-                        if (res.remaining_time !== undefined) return res;
-                        return docker_request("POST").then(res => {
-                            this.recv("成功获取题目环境。");
-                            this.recv(
-                                "注意：同一账户同时只能开启同一题目，请注意合理安排做题时间"
-                            );
-                            return docker_request("GET");
-                        });
-                    })
-                    .then(chall => {
-                        this.recv(chall.domain);
-                        this.recv("剩余时间：" + chall.remaining_time + "秒");
-                    })
-                    .catch(err => this.recv(err));
+            查询分值: async () =>
+                this.recv(`当前题目分值${
+                    (await this.updateChallenge(this.active)).value
+                }`),
+            获取环境: async () => {
+                try {
+                    var chall = await docker_request("GET");
+                    if (chall.remaining_time === undefined) {
+                        await docker_request("POST");
+                        this.recv("成功获取题目环境。");
+                        this.recv(
+                            "注意：同一账户同时只能开启同一题目，请注意合理安排做题时间"
+                        );
+                        chall = await docker_request("GET");
+                    }
+                    if (chall.port !== undefined)
+                        this.recv(`nc ${chall.ip} ${chall.port}\n剩余时间：${
+                            chall.remaining_time
+                            }秒`);
+                    else this.recv(`[题目链接](http://${chall.domain}) 剩余时间：${
+                        chall.remaining_time
+                        }秒`);
+                } catch (err) { this.recv(err); }
             },
-            延长时限: () => {
-                docker_request("PATCH")
-                    .then(res => this.recv("延长时限成功"))
-                    .catch(err => this.recv(err));
+            延长时限: async () => {
+                try {
+                    await docker_request("PATCH")
+                    this.recv("延长时限成功");
+                } catch (err) { this.recv(err); }
             },
-            销毁环境: () => {
-                docker_request("DELETE")
-                    .then(res => this.recv("销毁环境成功"))
-                    .catch(err => this.recv(err));
+            销毁环境: async () => {
+                try {
+                    await docker_request("DELETE")
+                    this.recv("销毁环境成功");
+                } catch (err) { this.recv(err); }
             },
-            重置环境: () => {
-                docker_request("POST")
-                    .then(res => {
-                        this.recv("成功重置题目环境。");
-                        return this.func_registry.获取环境();
-                    })
-                    .catch(err => this.recv(err));
+            重置环境: async () => {
+                try {
+                    await docker_request("POST");
+                    this.recv("成功重置题目环境。");
+                    await this.func_registry.获取环境();
+                } catch (err) { this.recv(err); }
+            },
+            一键锤爆出题人的狗头: () => {
+                var avatar = this.challs[this.active].avatar;
+                var match = avatar.match(/https:\/\/q2\.qlogo\.cn\/headimg_dl\?dst_uin=([0-9]*)/)
+                console.log(match)
+                if (match === null)
+                    this.recv(`锤不到（`);
+                else
+                    this.recv(`出题人QQ: ${match[1]}`);
             }
         };
     },

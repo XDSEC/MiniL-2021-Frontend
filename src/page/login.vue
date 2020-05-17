@@ -70,31 +70,38 @@ export default {
             this.message = text;
             this.messageShow = true;
         },
-        login () {
+        async login () {
             if(this.loginName != '' && this.loginPassword != '') {
                 let data = {
                     name: this.loginName,
                     password: this.loginPassword,
                 }
-                ajax.post('/login', data).then(resp => {
-                    localStorage.setItem('team_id', this.loginName)
-                    localStorage.setItem('nonce', resp.data.nonce)
-                    this.$router.push('/challenges');
-                }).catch(error => {
-                    this.messageBox('用户名或密码错误');
-                    console.log(error)
-                });
+                var resp = await ajax.post('/login', data)
+                if (resp.success === false) {
+                    this.messageBox(resp.data);
+                    return;
+                }
+                try {
+                    var challenges = await ajax.get('/challenges')
+                } catch (err) {
+                    console.log(err);
+                    this.messageBox('比赛尚未开始');
+                }
+                console.log(challenges);
+                localStorage.setItem('team_id', this.loginName)
+                localStorage.setItem('nonce', resp.data.nonce)
+                this.$router.push('/challenges');
             }
             else {
-                if(this.loginName === '') {
+                if (this.loginName === '') {
                     this.messageBox('登录名不能为空');
                 }
-                else if(this.loginPassword === '') {
+                else if (this.loginPassword === '') {
                     this.messageBox('密码不能为空')
                 }
             }
         },
-        register () {
+        async register () {
             if(this.registerName === '' ||  this.registerEmail === '' || this.registerPassword === '' || this.registerPasswordRepeat === '') {
                 this.messageBox('请将信息填写完整');
             }
@@ -108,15 +115,17 @@ export default {
                         email: this.registerEmail,
                         password: this.registerPassword,
                     }
-                    ajax.post('/register', data).then(resp => {
+                    try {
+                        var resp = await ajax.post('/register', data);
                         if(resp.success === true) {
                             this.messageBox('注册成功');
                             this.showToggle();
                         }
-                        else {
+                        else
                             this.messageBox(resp.data);
-                        }
-                    }).catch(error => console.log(error));
+                    } catch(error) {
+                        console.log(error);
+                    }
                 }
             }
         },
@@ -124,9 +133,6 @@ export default {
             this.$router.push('/index');
         }
     },
-    created () {
-        
-    }
 }
 </script>
 
@@ -271,7 +277,6 @@ input {
     background: rgb(38, 123, 253);
     border: 1px solid rgb(129, 169, 241);
 }
- 
 .tiptext {
     visibility: hidden;
     width: 60px;
@@ -280,10 +285,8 @@ input {
     text-align: center;
     margin: 0 10px;
     border-radius: 6px;
- 
     position: absolute;
 }
- 
 .tip:hover .tiptext {
     visibility: visible;
 }

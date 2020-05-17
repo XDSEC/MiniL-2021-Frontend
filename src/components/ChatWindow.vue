@@ -19,7 +19,13 @@
                     <img :src="item.admin != 0 ? avatar : '../../static/images/avatar.png'" />
                 </div>
                 <div class="text-container">
-                    <vue-simple-markdown :source="item.text" v-if="item.admin != 0" class="text"></vue-simple-markdown>
+                    <vue-simple-markdown
+                        style="white-space: inherit !important;"
+                        :source="item.text"
+                        v-if="item.admin != 0"
+                        :postrender="(x)=>x.replace(/\n/g, '<br/>')"
+                        class="text"
+                    ></vue-simple-markdown>
                     <div class="text" v-if="item.admin === 0">{{item.text}}</div>
                 </div>
             </div>
@@ -69,7 +75,14 @@
                         @click="send('重置环境')"
                         :transform="{ rotate: 42 }"
                     />
-                </nav>
+                </nav>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <font-awesome-icon
+                    :icon="['fas', 'hammer']"
+                    width="2em"
+                    fixed-width
+                    @click="send('一键锤爆出题人的狗头')"
+                    :class="['tools-icon', muted ? 'disable' : '']"
+                />
             </div>
             <textarea
                 v-if="!muted"
@@ -89,12 +102,13 @@ import {
     faPlayCircle,
     faStopCircle,
     faClock,
-    faRedoAlt
+    faRedoAlt,
+    faHammer
 } from "@fortawesome/free-solid-svg-icons";
 import { faGrin } from "@fortawesome/free-regular-svg-icons";
 import { faDocker } from "@fortawesome/free-brands-svg-icons";
 
-library.add(faPlayCircle, faStopCircle, faClock, faGrin, faDocker, faRedoAlt);
+library.add(faPlayCircle, faStopCircle, faClock, faGrin, faDocker, faRedoAlt, faHammer);
 export default {
     props: ["talkList", "avatar", "title", "muted"],
     data() {
