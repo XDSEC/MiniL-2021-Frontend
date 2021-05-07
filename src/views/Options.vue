@@ -4,23 +4,19 @@
             <HeadBar></HeadBar>
             <div class="scoreboard-container">
                 <!-- 时钟 -->
-                <div class="time">Current Time: {{timeString}}</div>
+                <div class="time">Current Time: {{ timeString }}</div>
                 <div class="time" style="font-size: 50px">Ranks</div>
                 <div class="time"></div>
                 <!-- 排行榜 -->
-                <div class="rank-container tip">
+                <div class="rank-container tip" v-if="scoreboard != ''">
                     <div
-                        v-if="scoreboard != ''"
                         v-for="(value, key) in scoreboard"
                         :key="key"
                         :class="['rank-item', key === 0 ? 'one' : '', key === 1 ? 'two' : '', key === 2 ? 'three' : '']"
                     >
-                        <div class="rank-num">#{{key+1}}</div>
-                        <router-link
-                            :to="'/team/'+value.id"
-                            class="link"
-                        >{{value.name}}</router-link>
-                        <div class="score-num">{{value.score}}</div>
+                        <div class="rank-num">#{{ key + 1 }}</div>
+                        <router-link :to="'/team/' + value.id" class="link">{{ value.name }}</router-link>
+                        <div class="score-num">{{ value.score }}</div>
                     </div>
 
                     <!-- 加载图标 -->
@@ -34,11 +30,11 @@
 </template>
 
 <script>
-import Vue from "vue";
-import HeadBar from "../components/HeadBar.vue";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faSpinner } from "@fortawesome/free-solid-svg-icons";
-import ajax from "../tools/ajax";
+import Vue from 'vue';
+import HeadBar from '../components/HeadBar.vue';
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { faSpinner } from '@fortawesome/free-solid-svg-icons';
+import ctfd from '../ctfd';
 
 library.add(faSpinner);
 
@@ -49,96 +45,78 @@ export default {
     data() {
         return {
             //时钟字符串
-            timeString: "00:00:00",
+            timeString: '00:00:00',
             //计时器id
-            _time: "",
+            timer_count: '',
             //计时器id
-            _scoreboard: "",
+            timer_scoreboard: '',
             //分值榜
-            scoreboard: "",
+            scoreboard: '',
             //排行榜
-            rankboard: ""
+            rankboard: ''
         };
     },
     methods: {
         countTime() {
             let time = new Date();
             let hour = time.getHours();
-            hour = hour < 10 ? "0" + hour : hour;
+            hour = hour < 10 ? '0' + hour : hour;
 
             let min = time.getMinutes();
-            min = min < 10 ? "0" + min : min;
+            min = min < 10 ? '0' + min : min;
 
             let sec = time.getSeconds();
-            sec = sec < 10 ? "0" + sec : sec;
+            sec = sec < 10 ? '0' + sec : sec;
 
-            this.timeString = hour + ":" + min + ":" + sec;
+            this.timeString = hour + ':' + min + ':' + sec;
         },
         showChange(name) {
             this.show = name;
         },
         getScoreboard() {
-            ajax.get("/scoreboard/top/100")
-                .then(resp => {
+            ctfd.get('/scoreboard/top/100')
+                .then((resp) => resp.json())
+                .then((resp) => {
                     console.log(resp);
-                    this.scoreboard = []
-                    for(var i in resp.data) {
+                    this.scoreboard = [];
+                    for (var i in resp.data) {
                         var user = resp.data[i];
                         var score = 0;
-                        for(var s in user.solves)
-                            score += user.solves[s].value;
+                        for (var s in user.solves) score += user.solves[s].value;
                         this.scoreboard.push({
                             id: user.id,
                             name: user.name,
-                            score: score,
-                        })
+                            score: score
+                        });
                     }
                 })
-                .catch(error => console.log(error));
+                .catch((error) => console.log(error));
         }
     },
     created() {
         this.countTime();
         this.getScoreboard();
-        this._time = setInterval(this.countTime, 300);
-        this._scoreboard = setInterval(this.getScoreboard, this.$time);
+        this.timer_count = setInterval(this.countTime, 300);
+        this.timer_scoreboard = setInterval(this.getScoreboard, this.$time);
     },
     beforeDestroy() {
-        clearInterval(this._time);
-        clearInterval(this._scoreboard);
+        clearInterval(this.timer_count);
+        clearInterval(this.timer_scoreboard);
     }
 };
 </script>
 
 <style scoped>
-.con {
-    height: 100%;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: #ededed;
-    background-position: center center;
-    background-size: cover;
-}
-.container {
-    height: 750px;
-    width: 800px;
-    border-radius: 10px;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: center;
-}
 .scoreboard-container {
-    height: 695px;
+    height: calc(100% - 50px);
+    max-height: 95%;
     width: 100%;
-    background: #ffffff;
+    background: transparent;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
     align-items: center;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 .time {
     height: 30px;
@@ -164,10 +142,10 @@ export default {
     cursor: pointer;
 }
 .tag-container div:hover {
-    border-bottom: 2px solid #2296c4;
+    border-bottom: 2px solid #0078d6;
 }
 .tag-container .active {
-    border-bottom: 2px solid #2296c4;
+    border-bottom: 2px solid #0078d6;
 }
 .rank-container {
     height: 430px;
@@ -224,7 +202,7 @@ export default {
 .link:hover,
 .link:active {
     text-decoration: none;
-    color: #000000;
+    color: white;
 }
 
 .loading {

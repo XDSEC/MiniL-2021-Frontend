@@ -1,26 +1,26 @@
 <template>
-    <div class="con">
-        <div class="container">
-            <HeadBar></HeadBar>
+    <div class="container">
+        <HeadBar></HeadBar>
+        <div class="mine-container">
             <div class="mine-top-container">
                 <div id="canvas"></div>
-                <div class="team-name">{{name}}</div>
+                <div class="team-name">{{ name }}</div>
             </div>
             <div class="mine-middel-container">
                 <div class="team-rank">
                     <div>
                         <font-awesome-icon icon="trophy" class="icon" />
-                        <div>{{rank}}</div>
+                        <div>{{ rank }}</div>
                     </div>
                 </div>
                 <div class="team-info">
                     <div>
-                        <div>{{score}}</div>
+                        <div>{{ score }}</div>
                         <div>Total</div>
                     </div>
                     <div v-for="(chall, cat) in category_total" :key="cat">
-                        <div>{{chall}}</div>
-                        <div>{{cat}}</div>
+                        <div>{{ chall }}</div>
+                        <div>{{ cat }}</div>
                     </div>
                 </div>
             </div>
@@ -29,14 +29,7 @@
                 <font-awesome-icon icon="spinner" spin />
             </div>
             <div class="mine-bottom-container" v-show="!tableLoading">
-                <el-table
-                    :data="solve_detail"
-                    stripe
-                    border
-                    max-height="280px"
-                    height="280"
-                    style="width: 720px"
-                >
+                <el-table :data="solve_detail" stripe border max-height="280px" height="280" style="width: 720px">
                     <el-table-column prop="date" label="时间" width="180"></el-table-column>
                     <el-table-column prop="challenge.category" label="分类" width="180"></el-table-column>
                     <el-table-column prop="challenge.name" label="题目" width="180"></el-table-column>
@@ -48,23 +41,23 @@
 </template>
 
 <script>
-import Vue from "vue";
-import HeadBar from "../components/HeadBar.vue";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faTrophy } from "@fortawesome/free-solid-svg-icons";
-import { faSpinner } from "@fortawesome/free-solid-svg-icons";
-import ajax from "../tools/ajax";
+import Vue from 'vue';
+import HeadBar from '../components/HeadBar.vue';
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { faTrophy } from '@fortawesome/free-solid-svg-icons';
+import { faSpinner } from '@fortawesome/free-solid-svg-icons';
+import ctfd from '../ctfd';
 
 library.add(faTrophy);
 library.add(faSpinner);
 
 // 引入 ECharts 主模块
-var echarts = require("echarts/lib/echarts");
+var echarts = require('echarts/lib/echarts');
 // 引入柱状图
-require("echarts/lib/chart/pie");
+require('echarts/lib/chart/pie');
 // 引入提示框和标题组件
-require("echarts/lib/component/tooltip");
-require("echarts/lib/component/title");
+require('echarts/lib/component/tooltip');
+require('echarts/lib/component/title');
 
 export default {
     components: {
@@ -72,7 +65,7 @@ export default {
     },
     data() {
         return {
-            name: "",
+            name: '',
             rank: 1,
             score: 0,
             solves: [],
@@ -82,13 +75,11 @@ export default {
     },
     computed: {
         echartData() {
-            this.solves.sort((a, b) => a - b);
-            console.log(this.category_total);
-            var ret = []
+            var ret = [];
             for (var i in this.category_total) {
-                ret.push({name: i, value: this.category_total[i]})
+                ret.push({ name: i, value: this.category_total[i] });
             }
-            return ret
+            return ret;
         },
         solve_detail() {
             let solve_detail = this.solves;
@@ -105,37 +96,34 @@ export default {
     },
     methods: {
         getInfo(id) {
-            ajax.get("/users/" + id)
-                .then(resp => {
+            ctfd.get('/users/' + id)
+                .then((resp) => resp.json())
+                .then((resp) => {
                     this.name = resp.data.name;
                     this.rank = resp.data.place;
                     this.score = resp.data.score;
-                    return ajax
-                        .get("/users/" + id + "/solves")
-                        .then(resp => resp.data);
+                    return ctfd
+                        .get('/users/' + id + '/solves')
+                        .then((resp) => resp.json())
+                        .then((resp) => resp.data);
                 })
-                .catch(error => console.log(error))
-                .then(resp => {
+                .catch((error) => console.log(error))
+                .then((resp) => {
                     for (let i in resp) {
                         var d = Date.parse(resp[i].date);
-                        resp[i].date = new Intl.DateTimeFormat("zh", {
-                            month: "short",
-                            day: "2-digit",
-                            hour: "2-digit",
-                            minute: "2-digit"
+                        resp[i].date = new Intl.DateTimeFormat('zh', {
+                            month: 'short',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit'
                         }).format(d);
 
                         var chall = resp[i].challenge;
-                        resp[i].challenge.name = chall.name.replace(/\[.*\]/g, '')
-                        if (this.category_total[chall.category] === undefined)
-                            this.category_total[chall.category] = 0;
+                        resp[i].challenge.name = chall.name.replace(/\[.*\]/g, '');
+                        if (this.category_total[chall.category] === undefined) this.category_total[chall.category] = 0;
 
                         this.solves.push(resp[i]);
-                        Vue.set(
-                            this.category_total,
-                            chall.category,
-                            this.category_total[chall.category] + chall.value
-                        );
+                        Vue.set(this.category_total, chall.category, this.category_total[chall.category] + chall.value);
                     }
                     this.$nextTick(() => {
                         this.drawPie();
@@ -145,40 +133,40 @@ export default {
         },
         drawPie() {
             // 基于准备好的dom，初始化echarts实例
-            let myChart = echarts.init(document.getElementById("canvas"));
+            let myChart = echarts.init(document.getElementById('canvas'));
             let option = {
                 tooltip: {
-                    trigger: "item",
-                    formatter: "{a} <br/>{b} : {c} ({d}%)"
+                    trigger: 'item',
+                    formatter: '{a} <br/>{b} : {c} ({d}%)'
                 },
                 series: [
                     {
-                        name: "分值占比",
-                        type: "pie",
-                        radius: "70%",
-                        center: ["50%", "50%"],
+                        name: '分值占比',
+                        type: 'pie',
+                        radius: '70%',
+                        center: ['50%', '50%'],
                         data: this.echartData,
-                        roseType: "radius",
+                        roseType: 'radius',
                         label: {
                             normal: {
                                 textStyle: {
-                                    color: "rgba(255, 255, 255, 0.8)"
+                                    color: 'rgba(255, 255, 255, 0.8)'
                                 }
                             }
                         },
                         labelLine: {
                             normal: {
                                 lineStyle: {
-                                    color: "rgba(255, 255, 255, 0.6)"
+                                    color: 'rgba(255, 255, 255, 0.6)'
                                 },
                                 smooth: 0.2,
                                 length: 10,
                                 length2: 20
                             }
                         },
-                        animationType: "scale",
-                        animationEasing: "elasticOut",
-                        animationDelay: function(idx) {
+                        animationType: 'scale',
+                        animationEasing: 'elasticOut',
+                        animationDelay: function (idx) {
                             return Math.random() * 200;
                         }
                     }
@@ -196,35 +184,17 @@ export default {
 </script>
 
 <style scoped>
-.con {
-    height: 100%;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: #ededed;
-    background-position: center center;
-    background-size: cover;
-}
-.container {
-    height: 750px;
-    width: 800px;
-    border-radius: 10px;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: center;
-}
 .mine-container {
-    height: 695px;
+    height: calc(100% - 50px);
+    max-height: 95%;
     width: 100%;
-    background: #ffffff;
+    background: transparent;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 .mine-top-container {
     height: 295px;
     width: 100%;
-    background: rgb(171, 219, 238);
+    background: #ffffff20;
     background-position: center center;
     background-size: cover;
 
@@ -249,7 +219,7 @@ export default {
     height: 100px;
     width: 100%;
     box-sizing: border-box;
-    background: #ffffff;
+    background: transparent;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -306,7 +276,7 @@ export default {
 .mine-bottom-container {
     height: 300px;
     width: 100%;
-    background: #ffffff;
+    background: transparent;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;

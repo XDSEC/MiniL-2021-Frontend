@@ -1,7 +1,5 @@
-import { baseURL } from './config';
-
 function request(method, url, data) {
-    return fetch(baseURL + url, {
+    return fetch('/api/v1' + url, {
         method: method,
         body: JSON.stringify(data),
         headers: {
@@ -9,10 +7,6 @@ function request(method, url, data) {
             'CSRF-Token': localStorage.getItem("nonce"),
         },
         credentials: 'include'
-    }).then(res => {
-        if (res.status === 200)
-            return res.json()
-        throw res
     })
 }
 export default {

@@ -1,32 +1,30 @@
 <template>
     <div class="right-container">
         <!-- 顶部显示回话标题 -->
-        <div class="title-container">{{title}}</div>
+        <div class="title-container">{{ title }}</div>
         <!-- 聊天信息主体 -->
         <div class="info-container">
             <a
                 ref="scr"
                 class="scroller"
                 href="#bottom"
-                v-smooth-scroll="{duration: 1000, container: '.info-container'}"
+                v-smooth-scroll="{
+                    duration: 1000,
+                    container: '.info-container'
+                }"
             ></a>
-            <div
-                v-for="(item, index) in talkList"
-                :key="index"
-                :class="[item.admin != 0 ? '' : 'mine','info-item']"
-            >
+            <div v-for="(item, index) in talkList" :key="index" :class="[item.is_send ? 'mine' : '', 'info-item']">
                 <div class="avatar">
-                    <img :src="item.admin != 0 ? avatar : '../../static/images/avatar.png'" />
+                    <img :src="item.avatar" />
                 </div>
                 <div class="text-container">
                     <vue-simple-markdown
-                        style="white-space: inherit !important;"
+                        style="white-space: inherit !important"
                         :source="item.text"
                         v-if="item.admin != 0"
-                        :postrender="(x)=>x.replace(/\n/g, '<br/>')"
+                        :postrender="(x) => x.replace(/\n/g, '<br/>')"
                         class="text"
                     ></vue-simple-markdown>
-                    <div class="text" v-if="item.admin === 0">{{item.text}}</div>
                 </div>
             </div>
             <span id="bottom"></span>
@@ -34,169 +32,123 @@
         <!-- 输入框主体 -->
         <div class="input-container">
             <div class="tools-bar">
-                <font-awesome-icon
-                    :icon="['far', 'grin']"
-                    width="2em"
-                    fixed-width
-                    @click="send('查询分值')"
-                    :class="['tools-icon', muted ? 'disable' : '']"
-                />&nbsp;
-                <nav class="drawer">
-                    <input :type="muted?'':'checkbox'" href="#" class="menu-open" id="menu-open" />
-                    <label
-                        for="menu-open"
-                        :class="['menu-open-button', 'tools-icon', muted ? 'disable' : '']"
-                    >
-                        <font-awesome-icon :icon="['fab', 'docker']" fixed-width />
-                    </label>
+                <div :class="['tools-icon', muted ? 'disable' : '']">
+                    <font-awesome-icon :icon="['far', 'grin']" fixed-width @click="$emit('send_msg', '查询分值')" />
+                </div>
+                <div :class="['tools-icon', muted ? 'disable' : '']">
+                    <font-awesome-icon
+                        :icon="['fas', 'hammer']"
+                        width="2em"
+                        fixed-width
+                        @click="$emit('send_msg', '一键锤爆出题人')"
+                    />
+                </div>
 
+                <div :class="['tools-icon', muted ? 'disable' : '']">
+                    <font-awesome-icon :icon="['fab', 'docker']" fixed-width @click="show_menu = !show_menu" />
+                </div>
+                <div :class="['tools-icon', muted ? 'disable' : '']" v-if="show_menu">
                     <font-awesome-icon
                         class="menu-item"
                         :icon="['fas', 'play-circle']"
                         fixed-width
-                        @click="send('获取环境')"
+                        @click="$emit('send_msg', '获取环境')"
                     />
+                </div>
+                <div :class="['tools-icon', muted ? 'disable' : '']" v-if="show_menu">
                     <font-awesome-icon
                         class="menu-item"
                         :icon="['fas', 'clock']"
                         fixed-width
-                        @click="send('延长时限')"
+                        @click="$emit('send_msg', '延长时限')"
                     />
+                </div>
+                <div :class="['tools-icon', muted ? 'disable' : '']" v-if="show_menu">
                     <font-awesome-icon
                         class="menu-item"
                         :icon="['fas', 'stop-circle']"
                         fixed-width
-                        @click="send('销毁环境')"
+                        @click="$emit('send_msg', '销毁环境')"
                     />
+                </div>
+                <div :class="['tools-icon', muted ? 'disable' : '']" v-if="show_menu">
                     <font-awesome-icon
                         class="menu-item"
                         :icon="['fas', 'redo-alt']"
                         fixed-width
-                        @click="send('重置环境')"
+                        @click="$emit('send_msg', '重置环境')"
                         :transform="{ rotate: 42 }"
                     />
-                </nav>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                <font-awesome-icon
-                    :icon="['fas', 'hammer']"
-                    width="2em"
-                    fixed-width
-                    @click="send('一键锤爆出题人的狗头')"
-                    :class="['tools-icon', muted ? 'disable' : '']"
-                />
+                </div>
             </div>
             <textarea
                 v-if="!muted"
-                placeholder="flag格式: minil{xxxxx} 请提交完整字符串"
                 v-model="message"
-                @keydown.enter.prevent="send()"
+                @keydown.enter.prevent="$emit('send_msg', message)"
                 ref="textarea"
+                id="input-area"
             ></textarea>
-            <textarea v-if="muted" disabled placeholder="已经不能输入了"></textarea>
+            <textarea v-if="muted" disabled placeholder="你已被禁言"></textarea>
         </div>
     </div>
 </template>
 
 <script>
-import { library } from "@fortawesome/fontawesome-svg-core";
+import { library } from '@fortawesome/fontawesome-svg-core';
 import {
+    faThumbtack,
     faPlayCircle,
     faStopCircle,
     faClock,
     faRedoAlt,
     faHammer
-} from "@fortawesome/free-solid-svg-icons";
-import { faGrin } from "@fortawesome/free-regular-svg-icons";
-import { faDocker } from "@fortawesome/free-brands-svg-icons";
+} from '@fortawesome/free-solid-svg-icons';
+import { faGrin } from '@fortawesome/free-regular-svg-icons';
+import { faDocker } from '@fortawesome/free-brands-svg-icons';
 
-library.add(faPlayCircle, faStopCircle, faClock, faGrin, faDocker, faRedoAlt, faHammer);
+import { get_avatar, render } from '../utils';
+
+library.add(faPlayCircle, faStopCircle, faClock, faThumbtack, faRedoAlt, faDocker, faGrin, faHammer);
 export default {
-    props: ["talkList", "avatar", "title", "muted"],
+    props: ['talkList', 'title', 'muted'],
     data() {
         return {
-            message: "",
-            position: 0
+            message: '',
+            position: 0,
+            show_menu: false
         };
     },
     methods: {
         send(msg = this.message) {
-            if (msg === "" || this.muted) return;
+            if (msg === '' || this.muted) return;
+            let avatar = '/img/logo.c9d12710.svg';
+            let qqmail = localStorage.getItem('email').match(/([0-9]*)@qq\.com/);
+            if (qqmail !== null) avatar = get_avatar(qqmail[1]);
             this.talkList.push({
-                text: msg,
-                admin: 0
+                avatar: avatar,
+                text: render(msg),
+                is_send: true
             });
-            this.$emit("send_msg", msg);
-            this.message = "";
+            this.message = '';
             this.$refs.scr.click();
         },
-        recv(msg, role = 1) {
+        recv(msg, avatar) {
             this.talkList.push({
-                text: msg,
-                admin: role
+                avatar: avatar,
+                text: render(msg),
+                is_send: false
             });
             this.$refs.scr.click();
         }
+    },
+    updated() {
+        let message = document.getElementById('input-area');
+        if (message && !message.matches(':focus')) this.$refs.scr.click();
     }
 };
 </script>
 
 <style>
-.drawer {
-    width: 20px;
-    height: 20px;
-    align-content: center;
-}
-.menu-open {
-    display: none;
-}
-.menu-open-button {
-    z-index: 1;
-    background-color: #ffffff;
-}
-.menu-item {
-    -webkit-transition: -webkit-transform ease-out 200ms;
-    transition: transform ease-out 200ms, -webkit-transform ease-out 200ms;
-    color: rgb(126, 126, 126);
-}
-.menu-item,
-.menu-open-button {
-    cursor: pointer;
-    border-radius: 100%;
-    position: absolute;
-}
-
-.menu-open:checked ~ .menu-item {
-    -webkit-transition-timing-function: cubic-bezier(0.935, 0, 0.34, 1.33);
-    transition-timing-function: cubic-bezier(0.935, 0, 0.34, 1.33);
-}
-
-.menu-open:checked ~ .menu-item:nth-child(3) {
-    transition-duration: 160ms;
-    -webkit-transition-duration: 160ms;
-    -webkit-transform: translate3d(-33px, -27px, 0);
-    transform: translate3d(-33px, -27px, 0);
-}
-
-.menu-open:checked ~ .menu-item:nth-child(4) {
-    transition-duration: 200ms;
-    -webkit-transition-duration: 200ms;
-    -webkit-transform: translate3d(-11px, -27px, 0);
-    transform: translate3d(-11px, -27px, 0);
-}
-
-.menu-open:checked ~ .menu-item:nth-child(5) {
-    transition-duration: 240ms;
-    -webkit-transition-duration: 240ms;
-    -webkit-transform: translate3d(11px, -27px, 0);
-    transform: translate3d(11px, -27px, 0);
-}
-
-.menu-open:checked ~ .menu-item:nth-child(6) {
-    transition-duration: 280ms;
-    -webkit-transition-duration: 280ms;
-    -webkit-transform: translate3d(33px, -27px, 0);
-    transform: translate3d(33px, -27px, 0);
-}
-
 .avatar img {
     height: 100%;
     width: 100%;
@@ -213,12 +165,12 @@ export default {
 }
 .right-container {
     height: 100%;
-    width: 600px;
+    width: calc(100% - 300px);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     align-items: center;
-    background: #ffffff;
+    background: transparent;
 }
 .title-container {
     height: 45px;
@@ -228,10 +180,11 @@ export default {
     padding: 0 20px;
     font-size: 14px;
     text-align: left;
-    background: #ffffff;
+    background: transparent;
+    color: rgb(255, 255, 255);
 }
 .info-container {
-    height: 480px;
+    height: 100%;
     width: 100%;
     overflow: auto;
 }
@@ -247,8 +200,10 @@ export default {
     flex-direction: row-reverse;
 }
 .info-item .avatar {
-    height: 25px;
-    width: 25px;
+    height: 36px;
+    width: 36px;
+    min-height: 36px;
+    min-width: 36px;
     border-radius: 50%;
     margin-top: 25px;
     overflow: hidden;
@@ -261,7 +216,7 @@ export default {
     margin: 0 20px 0 10px;
 }
 .info-item .text-container {
-    width: 545px;
+    width: 70%;
     display: flex;
     justify-content: flex-start;
     align-items: center;
@@ -270,42 +225,43 @@ export default {
     flex-direction: row-reverse;
 }
 .text-container .text {
-    max-width: 360px;
     line-height: 20px;
-    font-size: 12px;
+    font-size: 16px;
     padding: 5px;
     border-radius: 5px;
     text-align: left;
-    background: rgb(240, 240, 240);
+    background: rgba(0, 0, 0, 0.4);
+    color: white;
     word-break: break-all;
 }
 .input-container {
-    height: 170px;
+    height: 218px;
     width: 100%;
     box-sizing: border-box;
-    border-top: 1px solid rgb(245, 245, 248);
-    background: #ffffff;
+    border-top: 0px solid black;
+    border-left: 0px solid black;
+    background: rgba(40, 40, 40, 0.1);
+    color: white;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
     align-items: center;
 }
 .input-container .tools-bar {
-    height: 30px;
-    width: 100%;
+    font-size: 1.2rem;
     box-sizing: border-box;
-    padding: 0 20px;
     display: flex;
     justify-content: flex-start;
     align-items: center;
+    align-self: start;
+    padding-left: 1.2rem;
 }
 .tools-icon {
-    height: 20px;
-    width: 20px;
-    color: rgb(126, 126, 126);
+    height: 2rem;
+    color: rgb(255, 255, 255);
     cursor: pointer;
-    -webkit-transition-duration: 200ms;
-    transition-duration: 200ms;
+    padding-left: 1rem;
+    padding-right: 1rem;
 }
 .tools-icon:hover {
     -webkit-transform: scale(1.2, 1.2) translate3d(0, 0, 0);
@@ -314,18 +270,42 @@ export default {
 .tools-icon.disable {
     cursor: not-allowed;
 }
+
+.menu-input {
+    display: none;
+}
+.menu-dropdown {
+    cursor: pointer;
+}
+.menu-input + .menu {
+    display: none;
+}
+.menu-input:checked + .menu {
+    display: flex;
+}
+.menu-item {
+    cursor: pointer;
+    margin: -10px -20px;
+    padding: 10px 20px;
+}
+
 .input-container textarea {
-    height: 140px;
+    height: 182px;
     width: 100%;
     border: none;
     outline: none;
     box-sizing: border-box;
     padding: 10px;
     resize: none;
-    background: #ffffff;
+    background: rgba(0, 0, 0, 0.4);
+    color: white;
 }
 .input-container textarea:disabled {
     cursor: not-allowed;
-    background: #ffffff;
+    background: rgba(0, 0, 0, 0.2);
+    color: white;
+}
+::-webkit-scrollbar {
+    width: 0;
 }
 </style>

@@ -2,7 +2,7 @@
     <div class="top-container">
         <!-- 关闭最大化最小化 按钮 -->
         <div class="button-container">
-            <div class="red" @click="jump('index')"></div>
+            <div class="red" @click="$router.push('/index')"></div>
             <div class="yellow"></div>
             <div class="green"></div>
         </div>
@@ -10,29 +10,24 @@
         <div class="nav-contaier">
             <font-awesome-icon
                 icon="comment-dots"
-                :class="[page == 'Challenges' ? 'active' : '' ,'nav-icon']"
-                @click="jump('challenges')"
+                :class="[page == 'Challenges' ? 'active' : '', 'nav-icon']"
+                @click="$router.push('/challenges')"
             />
             <font-awesome-icon
                 icon="user"
-                :class="[page == 'Team' ? 'active' : '' ,'nav-icon']"
-                @click="jump('team')"
+                :class="[page == 'Team' ? 'active' : '', 'nav-icon']"
+                @click="$router.push('/team/me')"
             />
             <font-awesome-icon
                 icon="th-large"
-                :class="[page == 'ScoreBoard' ? 'active' : '' ,'nav-icon']"
-                @click="jump('scoreboard')"
+                :class="[page == 'Board' ? 'active' : '', 'nav-icon']"
+                @click="$router.push('/board')"
             />
         </div>
         <!-- 右边头像 -->
         <div class="avatar-container">
-            <div
-                class="avatar"
-                @click="logOut"
-                @mouseover="logout = true"
-                @mouseout="logout = false"
-            >
-                <img src="../../static/images/avatar.png" title="登出" v-show="!logout" />
+            <div class="avatar" @click="logOut" @mouseover="logout = true" @mouseout="logout = false">
+                <img src="../assets/logo.svg" title="登出" v-show="!logout" />
                 <div class="logout" v-show="logout">
                     <font-awesome-icon icon="sign-out-alt" />
                 </div>
@@ -42,14 +37,8 @@
 </template>
 
 <script>
-import { library } from "@fortawesome/fontawesome-svg-core";
-import {
-    faCommentDots,
-    faThLarge,
-    faUser,
-    faSignOutAlt
-} from "@fortawesome/free-solid-svg-icons";
-import ajax from '../tools/ajax'
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { faCommentDots, faThLarge, faUser, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
 
 library.add(faCommentDots);
 library.add(faThLarge);
@@ -57,31 +46,17 @@ library.add(faUser);
 library.add(faSignOutAlt);
 
 export default {
-    name: "headbar",
+    name: 'headbar',
     data() {
         return {
-            page: "",
+            page: '',
             logout: false
         };
     },
-    computed: {},
     methods: {
-        jump(url) {
-            if (url === "team") {
-                this.$router.push("/team/me");
-            } else {
-                this.$router.push("/" + url);
-            }
-        },
         logOut() {
-            ajax.get("/logout")
-                .then(resp => {
-                    if (resp.success === true) {
-                        localStorage.removeItem("team_id");
-                        this.$router.push("/login");
-                    }
-                })
-                .catch(error => console.log(error));
+            localStorage.clear();
+            this.$router.push('/login');
         }
     },
     created() {
@@ -96,9 +71,9 @@ export default {
 
 <style scoped>
 .top-container {
-    height: 55px;
+    height: 50px;
     width: 100%;
-    background: rgb(244, 244, 244);
+    background: rgba(255, 255, 255, 0.2);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -121,10 +96,10 @@ export default {
     background: rgb(252, 71, 72);
 }
 .button-container .yellow {
-    background: rgb(254, 181, 37);
+    background: none;
 }
 .button-container .green {
-    background: rgb(156, 209, 51);
+    background: none;
 }
 
 .avatar-container {
@@ -148,7 +123,7 @@ export default {
 .nav-icon {
     height: 28px;
     width: 24px;
-    color: rgb(117, 129, 127);
+    color: rgb(241, 241, 241);
     margin: 0 20px;
     cursor: pointer;
 }
