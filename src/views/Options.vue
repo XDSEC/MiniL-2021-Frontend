@@ -96,8 +96,8 @@ export default {
     created() {
         this.countTime();
         this.getScoreboard();
-        this.timer_count = setInterval(this.countTime, 300);
-        this.timer_scoreboard = setInterval(this.getScoreboard, this.$time);
+        this.timer_count = setInterval(this.countTime, 200);
+        this.timer_scoreboard = setInterval(this.getScoreboard, 5000);
     },
     beforeDestroy() {
         clearInterval(this.timer_count);
