@@ -1,108 +1,50 @@
 <template>
-    <div class="con">
-        <meta name="referrer" content="no-referrer" />
-        <div class="container">
-            <HeadBar></HeadBar>
-            <div class="main-container">
-                <div class="left-container">
-                    <div class="group-container">
-                        <div
-                            v-if="notice !== null"
-                            :key="notice"
-                            :class="['talk-item', active == notice ? 'active' : '']"
-                            @click="chooseTalk(notice)"
-                        >
-                            <div class="label">&nbsp;</div>
-                            <div class="avatar">
-                                <img src="../assets/xdsec.png" />
-                            </div>
-                            <div class="text">
-                                <div class="name">
-                                    {{ challs[notice].name }}
-                                </div>
-                                <div v-if="chat_storage[notice].length > 0">
-                                    {{ chat_storage[notice][chat_storage[notice].length - 1].text }}
-                                </div>
-                            </div>
+    <div class="container">
+        <HeadBar></HeadBar>
+        <div class="main-container">
+            <div class="left-container">
+                <div class="group-container">
+                    <ContactItem
+                        v-if="notice !== null"
+                        v-bind:avatar="require('../assets/xdsec.png')"
+                        v-bind:id="notice"
+                        v-bind:name="challs[notice].name"
+                        v-bind:active="active == notice"
+                        v-bind:caption="(chat_storage[notice].slice(-1).pop() || {}).text"
+                        v-bind:unread="cnt_unread[notice]"
+                        v-on:select="chooseTalk(notice)"
+                    ></ContactItem>
+                    <!-- ../assets/xdsec.png -->
+                </div>
+                <div class="group-container" v-for="(value, chat_type) in contacts" :key="chat_type">
+                    <!-- 生成分组的名字，可点击用于折叠 -->
+                    <div v-if="contacts != {}" class="group" @click="collapsed[chat_type] = !collapsed[chat_type]">
+                        <div class="group-name">
+                            <font-awesome-icon
+                                :icon="!collapsed[chat_type] ? 'chevron-down' : 'chevron-right'"
+                                class="icon"
+                            />
+                            {{ chat_type.toUpperCase() }}
+                            ({{ cnt_done[chat_type] }}/{{ Object.keys(contacts[chat_type]).length }})
                         </div>
                     </div>
-                    <div class="group-container" v-if="Object.keys(pinned).length !== 0">
-                        <div
-                            v-for="(res, item) in pinned"
-                            :key="item"
-                            :class="['labeled', 'talk-item', active == item ? 'active' : '']"
-                            @click="chooseTalk(item)"
-                        >
-                            <div v-if="challs.item !== undefined && pinned[item]">
-                                <div class="avatar">
-                                    <img :src="challs[item].avatar" />
-                                </div>
-                                <div class="text">
-                                    <div class="name">
-                                        {{ challs[item].name }}
-                                    </div>
-                                    <div v-if="chat_storage[item].length > 0">
-                                        {{ chat_storage[item][chat_storage[item].length - 1].text }}
-                                    </div>
-                                </div>
-                                <div class="unread" v-show="cnt_unread[item] != 0">
-                                    {{ cnt_unread[item] }}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="group-container" v-for="(value, chat_type) in contacts" :key="chat_type">
-                        <!-- 生成分组的名字，可点击用于折叠 -->
-                        <div v-if="contacts != {}" class="group" @click="collapsed[chat_type] = !collapsed[chat_type]">
-                            <div class="group-name">
-                                <font-awesome-icon
-                                    :icon="!collapsed[chat_type] ? 'chevron-down' : 'chevron-right'"
-                                    class="icon"
-                                />
-                                {{ chat_type.toUpperCase() }}
-                                ({{ cnt_done[chat_type] }}/{{ Object.keys(contacts[chat_type]).length }})
-                            </div>
-                        </div>
-                        <!-- 生成会话头像 -->
-                        <div v-show="!collapsed[chat_type]" class="group-list" v-if="contacts != {}">
-                            <div
-                                v-for="(value, index) in contacts[chat_type]"
-                                :key="index"
-                                :class="['talk-item', active == index ? 'active' : '']"
-                                @click="chooseTalk(index)"
-                            >
-                                <div class="avatar">
-                                    <img :src="challs[index].avatar" />
-                                </div>
-                                <div class="text">
-                                    <div class="name">
-                                        {{ challs[index].name }}
-                                    </div>
-                                    <div v-if="challs[index].done === 1">✅</div>
-                                    <div v-else-if="chat_storage[index].length > 0">
-                                        {{ chat_storage[index].slice(-1).pop().text }}
-                                    </div>
-                                </div>
-                                <div class="unread" v-show="cnt_unread[index] != 0">
-                                    {{ cnt_unread[index] }}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- 生成尚未加载成功的占位内容 -->
-                    <div class="group-list" v-if="contacts === {}">
-                        <div class="talk-item" v-for="i in 10" :key="i">
-                            <div class="avatar">
-                                <div class="none-avatar"></div>
-                            </div>
-                            <div class="text">
-                                <div class="none-name"></div>
-                                <div class="none-info"></div>
-                            </div>
-                        </div>
+                    <!-- 生成会话头像 -->
+                    <div v-show="!collapsed[chat_type]" class="group-list" v-if="contacts != {}">
+                        <ContactItem
+                            v-for="(value, index) in contacts[chat_type]"
+                            :key="index"
+                            v-bind:avatar="challs[index].avatar"
+                            v-bind:id="index"
+                            v-bind:name="challs[index].name + (challs[index].done === 1 ? '👌' : '')"
+                            v-bind:active="active == index"
+                            v-bind:caption="(chat_storage[index].slice(-1).pop() || {}).text"
+                            v-bind:unread="cnt_unread[index]"
+                            v-on:select="chooseTalk(index)"
+                        ></ContactItem>
                     </div>
                 </div>
+            </div>
+            <div class="right-container">
                 <ChatWindow
                     ref="chat"
                     v-if="active !== null"
@@ -110,7 +52,6 @@
                     v-bind:title="challs[active].name"
                     v-bind:muted="challs[active].done"
                     v-on:send_msg="handle_send"
-                    v-on:action="handle_action"
                 ></ChatWindow>
             </div>
         </div>
@@ -121,6 +62,7 @@
 import Vue from 'vue';
 import HeadBar from '@/components/HeadBar.vue';
 import ChatWindow from '@/components/ChatWindow';
+import ContactItem from '@/components/ContactItem';
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { faChevronRight, faChevronDown } from '@fortawesome/free-solid-svg-icons';
 import { get_avatar } from '../utils';
@@ -132,20 +74,12 @@ library.add(faChevronDown);
 export default {
     components: {
         HeadBar,
-        ChatWindow
+        ChatWindow,
+        ContactItem
     },
     data() {
         return {
-            persisted: [
-                'chat_storage',
-                'challs',
-                'contacts',
-                'pinned',
-                'cnt_unread',
-                'cnt_done',
-                'collapsed',
-                'notice'
-            ],
+            persisted: ['chat_storage', 'challs', 'contacts', 'cnt_unread', 'cnt_done', 'collapsed', 'notice'],
             //当前激活的会话
             active: null,
             //聊天记录
@@ -158,7 +92,6 @@ export default {
             challs: {},
             //左边的会话列表
             contacts: {},
-            pinned: {},
             //题目的完成进度
             cnt_done: {},
             //未读消息数
@@ -184,7 +117,7 @@ export default {
             this.cnt_unread[id] = 0;
             this.active = id;
             for (let type in this.contacts) {
-                if (this.pinned[id] || this.challs[id].category.toLowerCase() != type) this.collapsed[type] = true;
+                if (this.challs[id].category.toLowerCase() != type) this.collapsed[type] = true;
             }
             this.updateHints(id);
         },
@@ -227,15 +160,6 @@ export default {
                     is_send: false
                 });
                 if (this.active !== id) this.cnt_unread[id] += 1;
-            }
-            this.cache();
-        },
-        handle_action(action) {
-            switch (action) {
-                case 'pin':
-                    if (this.pinned[this.active] === undefined) Vue.set(this.pinned, this.active, true);
-                    else Vue.set(this.pinned, this.active, !this.pinned[this.active]);
-                    break;
             }
             this.cache();
         },
@@ -294,16 +218,17 @@ export default {
                 if (challs.success) challs = challs.data;
                 else throw challs;
                 var resp = await ctfd.get('/users/me/solves');
+                let status = resp.status;
                 resp = await resp.json();
                 var solved = {};
                 if (resp.success !== true) throw resp;
                 for (var i of resp.data) solved[i.challenge_id] = true;
                 this.generateList(challs, solved);
             } catch (error) {
-                // alert("请重新登陆");
+                alert("请重新登陆");
                 console.log(error);
-                // localStorage.clear();
-                // this.$router.push("/login");
+                localStorage.clear();
+                this.$router.push("/login");
             }
         },
         async updateChallenge(index) {
@@ -469,6 +394,15 @@ export default {
 .left-container::-webkit-scrollbar {
     width: 0px;
 }
+.right-container {
+    height: 100%;
+    width: calc(100% - 300px);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    background: transparent;
+}
 .group-container {
     min-height: 30px;
     width: 100%;
@@ -501,110 +435,5 @@ export default {
 }
 .group-list {
     width: 100%;
-}
-.unread {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    right: 10px;
-    margin: auto;
-    height: 18px;
-    width: 18px;
-    border-radius: 50%;
-    background: rgb(239, 59, 57);
-    color: white;
-    font-size: 10px;
-    line-height: 18px;
-    text-align: center;
-}
-.talk-item {
-    height: 70px;
-    width: 100%;
-    display: flex;
-    justify-content: flex-start;
-    align-items: center;
-    cursor: pointer;
-    position: relative;
-}
-.talk-item.active {
-    background: rgba(88, 88, 88, 0.6);
-}
-.talk-item .avatar {
-    height: 40px;
-    width: 40px;
-    border-radius: 50%;
-    margin: 0 5px 0 20px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-}
-.none-avatar {
-    height: 40px;
-    width: 40px;
-    border-radius: 50%;
-    background: rgb(201, 201, 201);
-}
-.none-name,
-.none-info {
-    width: 100%;
-    margin: 2px;
-    background: rgb(201, 201, 201);
-}
-.none-name {
-    height: 20px;
-    margin-bottom: 5px;
-}
-.none-info {
-    height: 15px;
-}
-.talk-item.disable {
-    color: rgb(182, 182, 182);
-}
-.talk-item.disable .avatar {
-    filter: grayscale(100%);
-}
-.avatar img {
-    height: 100%;
-    width: 100%;
-}
-.talk-item .text {
-    height: 40px;
-    width: 60%;
-    margin: 0 10px 0 5px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    align-items: flex-start;
-    font-size: 12px;
-    overflow: hidden;
-}
-.text div {
-    margin: 0;
-    text-align: left;
-    line-height: 20px;
-}
-.text .name {
-    font-size: 16px;
-    width: 100%;
-    white-space: nowrap;
-}
-.label {
-    font-size: 4px;
-    line-height: 3em;
-    width: 6em;
-    background: #ffffff;
-    position: absolute;
-    left: 0;
-    top: 0;
-    z-index: 2;
-    -webkit-transform-origin: right bottom;
-    -moz-transform-origin: right bottom;
-    transform-origin: right bottom;
-    -webkit-transform: translate(-29.29%, -100%) rotate(-45deg);
-    -moz-transform: translate(-29.29%, -100%) rotate(-45deg);
-    transform: translate(-29.29%, -100%) rotate(-45deg);
-    text-indent: 0;
-    text-align: center;
 }
 </style>
