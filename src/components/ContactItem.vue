@@ -106,4 +106,15 @@ export default {
     width: 100%;
     white-space: nowrap;
 }
+@media (max-width: 700px) {
+    .talk-item .text {
+        display: none;
+    }
+    .talk-item .unread {
+        top: 0;
+        bottom: 20px;
+        left: 50px;
+        right: 100%;
+    }
+}
 </style>

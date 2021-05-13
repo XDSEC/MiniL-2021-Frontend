@@ -226,10 +226,10 @@ export default {
                 for (var i of resp.data) solved[i.challenge_id] = true;
                 this.generateList(challs, solved);
             } catch (error) {
-                alert("请重新登陆");
+                alert('请重新登陆');
                 console.log(error);
                 localStorage.clear();
-                this.$router.push("/login");
+                this.$router.push('/login');
             }
         },
         async updateChallenge(index) {
@@ -403,6 +403,14 @@ export default {
     justify-content: space-between;
     align-items: center;
     background: transparent;
+}
+@media (max-width: 700px) {
+    .left-container {
+        width: 80px;
+    }
+    .right-container {
+        width: calc(100% - 80px);
+    }
 }
 .group-container {
     min-height: 30px;
