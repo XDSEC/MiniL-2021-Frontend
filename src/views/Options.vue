@@ -1,28 +1,26 @@
 <template>
-    <div class="con">
-        <div class="container">
-            <HeadBar></HeadBar>
-            <div class="scoreboard-container">
-                <!-- 时钟 -->
-                <div class="time">Current Time: {{ timeString }}</div>
-                <div class="time" style="font-size: 50px">Ranks</div>
-                <div class="time"></div>
-                <!-- 排行榜 -->
-                <div class="rank-container tip" v-if="scoreboard != ''">
-                    <div
-                        v-for="(value, key) in scoreboard"
-                        :key="key"
-                        :class="['rank-item', key === 0 ? 'one' : '', key === 1 ? 'two' : '', key === 2 ? 'three' : '']"
-                    >
-                        <div class="rank-num">#{{ key + 1 }}</div>
-                        <router-link :to="'/team/' + value.id" class="link">{{ value.name }}</router-link>
-                        <div class="score-num">{{ value.score }}</div>
-                    </div>
+    <div class="container">
+        <HeadBar></HeadBar>
+        <div class="scoreboard-container">
+            <!-- 时钟 -->
+            <div class="time">Current Time: {{ timeString }}</div>
+            <div class="time" style="font-size: 50px">Ranks</div>
+            <div class="time"></div>
+            <!-- 排行榜 -->
+            <div class="rank-container tip" v-if="scoreboard != ''">
+                <div
+                    v-for="(value, key) in scoreboard"
+                    :key="key"
+                    :class="['rank-item', key === 0 ? 'one' : '', key === 1 ? 'two' : '', key === 2 ? 'three' : '']"
+                >
+                    <div class="rank-num">#{{ key + 1 }}</div>
+                    <router-link :to="'/team/' + value.id" class="link">{{ value.name }}</router-link>
+                    <div class="score-num">{{ value.score }}</div>
+                </div>
 
-                    <!-- 加载图标 -->
-                    <div v-if="scoreboard === ''" class="loading">
-                        <font-awesome-icon icon="spinner" spin />
-                    </div>
+                <!-- 加载图标 -->
+                <div v-if="scoreboard === ''" class="loading">
+                    <font-awesome-icon icon="spinner" spin />
                 </div>
             </div>
         </div>
@@ -30,7 +28,6 @@
 </template>
 
 <script>
-import Vue from 'vue';
 import HeadBar from '../components/HeadBar.vue';
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { faSpinner } from '@fortawesome/free-solid-svg-icons';

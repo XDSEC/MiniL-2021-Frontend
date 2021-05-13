@@ -1,25 +1,17 @@
 <template>
     <div class="app-container">
+        <meta name="referrer" content="no-referrer" />
         <router-view />
     </div>
 </template>
 
 <script>
 export default {
-    name: "App"
+    name: 'App'
 };
 </script>
 
 <style >
-.con {
-    height: 100%;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: transparent center center;
-    background-size: cover;
-}
 .container {
     height: 100%;
     width: 100%;
@@ -34,12 +26,17 @@ export default {
 .app-container {
     height: 100%;
     width: 100%;
-    font-family: "Avenir", Helvetica, Arial, sans-serif;
+    font-family: 'Avenir', Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-align: center;
     position: fixed;
     color: #cccccc;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: transparent center center;
+    background-size: cover;
     background-color: #303030;
 }
 html,

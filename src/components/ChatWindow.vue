@@ -1,5 +1,5 @@
 <template>
-    <div class="right-container">
+    <div class="container">
         <!-- 顶部显示回话标题 -->
         <div class="title-container">{{ title }}</div>
         <!-- 聊天信息主体 -->
@@ -162,15 +162,6 @@ export default {
     font-size: 16px;
     width: 100%;
     white-space: nowrap;
-}
-.right-container {
-    height: 100%;
-    width: calc(100% - 300px);
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    align-items: center;
-    background: transparent;
 }
 .title-container {
     height: 45px;

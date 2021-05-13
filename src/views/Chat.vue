@@ -34,9 +34,10 @@
                             v-for="(value, index) in contacts[chat_type]"
                             :key="index"
                             v-bind:avatar="challs[index].avatar"
-                            v-bind:id="index"
-                            v-bind:name="challs[index].name + (challs[index].done === 1 ? '👌' : '')"
+                            v-bind:id="Number(index)"
+                            v-bind:name="challs[index].name"
                             v-bind:active="active == index"
+                            v-bind:online="challs[index].done !== 1"
                             v-bind:caption="(chat_storage[index].slice(-1).pop() || {}).text"
                             v-bind:unread="cnt_unread[index]"
                             v-on:select="chooseTalk(index)"
@@ -424,11 +425,13 @@ export default {
     height: 100%;
     width: 100%;
     display: flex;
+    white-space: nowrap;
     justify-content: flex-start;
     align-items: center;
 }
 .group-name .icon {
     margin: 0 10px;
+    width: 10px;
 }
 .group-number {
     margin-right: 10px;
