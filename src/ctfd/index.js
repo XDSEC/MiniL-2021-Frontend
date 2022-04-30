@@ -4,13 +4,14 @@ function request(method, url, data) {
         body: JSON.stringify(data),
         headers: {
             'Content-Type': 'application/json',
-            'CSRF-Token': localStorage.getItem("nonce"),
+            'CSRF-Token': localStorage.getItem('nonce'),
         },
-        credentials: 'include'
-    })
+        credentials: 'include',
+    });
 }
+
 export default {
     request: request,
     get: url => request('GET', url),
-    post: (url, data) => request('POST', url, data)
-}
+    post: (url, data) => request('POST', url, data),
+};

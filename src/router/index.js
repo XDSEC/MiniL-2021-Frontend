@@ -1,12 +1,12 @@
-import Vue from 'vue'
-import Router from 'vue-router'
+import Vue from 'vue';
+import Router from 'vue-router';
 
-import Login from '@/views/Login'
-import Chat from '@/views/Chat'
-import Contacts from '@/views/Contacts'
-import Options from '@/views/Options'
+import Login from '@/views/Login';
+import Chat from '@/views/Chat';
+import Contacts from '@/views/Contacts';
+import Options from '@/views/Options';
 
-Vue.use(Router)
+Vue.use(Router);
 
 var router = new Router({
     mode: process.env.IS_ELECTRON ? 'hash' : 'history',
@@ -21,7 +21,7 @@ var router = new Router({
         }, {
             path: '/challenges',
             name: 'Challenges',
-            component: Chat
+            component: Chat,
         }, {
             path: '/team/:id',
             name: 'Team',
@@ -31,17 +31,17 @@ var router = new Router({
             name: 'Board',
             component: Options,
         },
-    ]
-})
+    ],
+});
 
 router.beforeEach((to, from, next) => {
     let nonce = localStorage.getItem('nonce');
     let needIdList = ['Challenges', 'Team', 'Board'];
     if (nonce === null && needIdList.indexOf(to.name) !== -1)
-        next({ path: '/login' })
+        next({path: '/login'});
     else if (nonce !== null && to.name === 'Login')
-        next({ path: '/challenges' })
-    else next()
-})
+        next({path: '/challenges'});
+    else next();
+});
 
 export default router;

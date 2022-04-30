@@ -1,10 +1,11 @@
 function htmlentities(str) {
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
+
 var registry = {
     'text': (e) => htmlentities(e.text).replace(/\n/g, '<br>'),
-    'image': (e) => `<img src="${e.url}" style="max-width:600px;width:100%" />`
-}
+    'image': (e) => `<img src="${e.url}" style="max-width:600px;width:100%" />`,
+};
 
 module.exports = {
     get_avatar: (id, type = 'friend') => {
@@ -17,15 +18,15 @@ module.exports = {
     },
     parse: function (message) {
         if (message.length === 0 || message.length === undefined)
-            return
-        var ret = ''
+            return;
+        var ret = '';
         message.forEach(element => {
             if (registry[element.type] !== undefined)
-                ret += registry[element.type](element.data)
+                ret += registry[element.type](element.data);
         });
-        return ret
+        return ret;
     },
     render: function (message) {
         return message;
-    }
-}
+    },
+};
