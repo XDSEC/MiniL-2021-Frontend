@@ -119,9 +119,15 @@ export default {
       show_menu: false,
     };
   },
+  mounted() {
+    marked.setOptions({
+      gfm: true,
+      breaks: true,
+    });
+  },
   methods: {
     renderMarkdown(content) {
-      return dompurify.sanitize(marked(content));
+      return dompurify.sanitize(marked.parse(content));
     },
     send(msg = this.message) {
       if (msg === '' || this.muted) return;
@@ -165,7 +171,7 @@ export default {
 }
 
 .text p {
-    margin: 0 0;
+    margin: 4px 6px 4px 6px;
 }
 
 a {
