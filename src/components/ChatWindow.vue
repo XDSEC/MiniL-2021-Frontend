@@ -18,13 +18,12 @@
           <img :src="item.avatar"/>
         </div>
         <div class="text-container">
-          <vue-simple-markdown
+          <div
               v-if="item.admin !== 0"
-              :postrender="(x) => x.replace(/\n/g, '<br/>')"
-              :source="item.text"
               class="text"
               style="white-space: inherit !important"
-          ></vue-simple-markdown>
+              v-html="renderMarkdown(item.text)"
+          ></div>
         </div>
       </div>
       <span id="bottom"></span>
@@ -105,6 +104,8 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import {faGrin} from '@fortawesome/free-regular-svg-icons';
 import {faDocker} from '@fortawesome/free-brands-svg-icons';
+import {marked} from 'marked';
+import dompurify from 'dompurify';
 
 import {get_avatar, render} from '../utils';
 
@@ -119,6 +120,9 @@ export default {
     };
   },
   methods: {
+    renderMarkdown(content) {
+      return dompurify.sanitize(marked(content));
+    },
     send(msg = this.message) {
       if (msg === '' || this.muted) return;
       let avatar = '/img/logo.c9d12710.svg';
@@ -158,6 +162,15 @@ export default {
   margin: 0;
   text-align: left;
   line-height: 20px;
+}
+
+.text p {
+    margin: 0 0;
+}
+
+a {
+    color: #0078d6;
+    text-decoration: none;
 }
 
 .text .name {

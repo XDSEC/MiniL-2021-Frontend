@@ -181,10 +181,10 @@ export default {
         var id = challenges[i].id;
         this.challs[id] = challenges[i];
         let type = challenges[i].category.toLowerCase();
-        var avatar_url = challenges[i].name.match(/(.*)\[(.*)\]/);
+        var avatar_url = challenges[i].name.match(/\[(.*)\](.*)/);
         if (avatar_url !== null) {
-          challenges[i].name = avatar_url[1];
-          challenges[i].avatar = isNaN(avatar_url[2]) ? avatar_url[2] : this.get_avatar(avatar_url[2]);
+          challenges[i].name = avatar_url[2];
+          challenges[i].avatar = isNaN(avatar_url[1]) ? avatar_url[1] : this.get_avatar(avatar_url[1]);
         }
         if (this.chat_storage[id] === undefined) {
           Vue.set(this.chat_storage, id, []);
